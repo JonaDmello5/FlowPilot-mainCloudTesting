@@ -1,0 +1,26 @@
+[
+  {
+    "id": "1750683997453nizij",
+    "botType": "Perplexity AI",
+    "startTime": "2025-06-23T13:04:51.630Z",
+    "endTime": "2025-06-23T13:06:34.158Z",
+    "duration": "00:01:42",
+    "date": "2025-06-23"
+  },
+  {
+    "id": "1750681636476b4tdf",
+    "botType": "ChatGPT",
+    "startTime": "2025-06-23T12:14:10.868Z",
+    "endTime": "2025-06-23T12:27:15.692Z",
+    "duration": "00:13:04",
+    "date": "2025-06-23"
+  },
+  {
+    "id": "17506807183172e8cn",
+    "botType": "Perplexity AI",
+    "startTime": "2025-06-23T12:07:18.549Z",
+    "endTime": "2025-06-23T12:11:49.155Z",
+    "duration": "00:04:30",
+    "date": "2025-06-23"
+  }
+]
