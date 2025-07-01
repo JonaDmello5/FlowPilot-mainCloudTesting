@@ -58,7 +58,7 @@ VPN_CONFIG = {
     'vpn_command': 'sudo openvpn --config /etc/openvpn/client/us_california.ovpn --auth-user-pass /etc/openvpn/client/auth.txt',
     'max_retries': 5,
     'retry_delay': 30,  # seconds
-    'expected_ip': 'YOUR_EXPECTED_IP_OR_REGION'  # <-- Replace with your expected IP or region string
+    'expected_ip': '103.124.207.167'
 }
 
 # === EOXS CONFIGURATION ===
