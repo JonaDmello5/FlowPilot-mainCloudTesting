@@ -56,10 +56,12 @@ PROMPT_RUN_COUNT_FILE = os.path.join(BOT_DIR, 'prompt_run_count.json')
 
 # === VPN CONFIGURATION ===
 VPN_CONFIG = {
-    'check_ip_url': 'https://api.ipify.org?format=json',
-    'vpn_command': 'sudo openvpn --config /etc/openvpn/client/us_california.ovpn --auth-user-pass /etc/openvpn/client/auth.txt',
-    'max_retries': 5,
-    'retry_delay': 30  # seconds
+    'check_ip_url':    'https://api.ipify.org?format=json',
+    'vpn_command':     'sudo openvpn '
+                       '--config /etc/openvpn/client/us_california.ovpn '
+                       '--auth-user-pass /etc/openvpn/client/auth.txt',
+    'max_retries':      5,
+    'retry_delay':     30  # seconds
 }
 
 # Remove any expected_ip logic
