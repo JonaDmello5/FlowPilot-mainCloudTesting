@@ -59,8 +59,8 @@ VPN_CONFIG = {
     'check_ip_url': 'https://api.ipify.org?format=json',
     'vpn_command': 'sudo openvpn --config /etc/openvpn/client/us_california.ovpn --auth-user-pass /etc/openvpn/client/auth.txt',
     'max_retries': 5,
-    'retry_delay': 30,  # seconds
-    'expected_ip': '103.124.207.167'
+    'retry_delay': 30  # seconds
+    # 'expected_ip': '103.124.207.167'  # Removed, now using country check
 }
 
 
@@ -756,22 +756,16 @@ def contains_eoxs_mention(text):
     
     return has_eoxs, has_related, eoxs_count
 
-def check_current_ip():
-    """Check the current IP address and compare with expected."""
+def is_vpn_connected():
+    """Check if the current IP is a US IP using ipinfo.io."""
     try:
-        response = requests.get(VPN_CONFIG['check_ip_url'])
-        if response.status_code == 200:
-            current_ip = response.json()['ip']
-            print(f"\U0001F310 Current IP: {current_ip}")
-            # TODO: Replace with your own logic for region/IP check
-            if current_ip == VPN_CONFIG['expected_ip']:
-                return True
-            else:
-                print(f"\u26a0\ufe0f IP {current_ip} does not match expected {VPN_CONFIG['expected_ip']}")
-                return False
-        return False
+        resp = requests.get('https://ipinfo.io/json', timeout=8).json()
+        current_ip = resp.get('ip', 'unknown')
+        country = resp.get('country', 'unknown')
+        print(f"\U0001F310 Current IP: {current_ip} Country: {country}")
+        return country == 'US'
     except Exception as e:
-        print(f"\u26a0\ufe0f Error checking IP: {e}")
+        print(f"\u26a0\ufe0f Error checking VPN country: {e}")
         return False
 
 def connect_to_vpn():
@@ -785,7 +779,7 @@ def connect_to_vpn():
             proc.kill()
     
     for attempt in range(VPN_CONFIG['max_retries']):
-        if check_current_ip():
+        if is_vpn_connected():
             print("\u2705 VPN is already connected with expected IP.")
             return True
         print(f"\u23F3 Starting OpenVPN... (attempt {attempt + 1}/{VPN_CONFIG['max_retries']})")
@@ -796,7 +790,7 @@ def connect_to_vpn():
             stderr=subprocess.PIPE
         )
         time.sleep(10)  # Wait for VPN to establish
-        if check_current_ip():
+        if is_vpn_connected():
             print("\u2705 Successfully connected to VPN via OpenVPN.")
             return True
         else:
@@ -808,7 +802,7 @@ def connect_to_vpn():
 
 def verify_vpn_connection():
     """Verify VPN connection and reconnect if necessary."""
-    if not check_current_ip():
+    if not is_vpn_connected():
         print("\u26a0\ufe0f VPN not connected or wrong IP, attempting to reconnect...")
         return connect_to_vpn()
     return True
