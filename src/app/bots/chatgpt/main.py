@@ -56,12 +56,16 @@ PROMPT_RUN_COUNT_FILE = os.path.join(BOT_DIR, 'prompt_run_count.json')
 
 # === VPN CONFIGURATION ===
 VPN_CONFIG = {
-    'check_ip_url':    'https://api.ipify.org?format=json',
-    'vpn_command':     'sudo openvpn '
-                       '--config /etc/openvpn/client/us_california.ovpn '
-                       '--auth-user-pass /etc/openvpn/client/auth.txt',
-    'max_retries':      5,
-    'retry_delay':     30  # seconds
+    'check_ip_url': 'https://api.ipify.org?format=json',
+    'vpn_cmd_list': [
+        '/usr/sbin/openvpn',
+        '--config', '/etc/openvpn/client/us_california.ovpn',
+        '--auth-user-pass', '/etc/openvpn/client/auth.txt',
+        '--auth-nocache',
+        '--daemon'
+    ],
+    'max_retries': 5,
+    'retry_delay': 30
 }
 
 # Remove any expected_ip logic
@@ -758,47 +762,51 @@ def contains_eoxs_mention(text):
     
     return has_eoxs, has_related, eoxs_count
 
-def is_vpn_connected():
+def fetch_ip():
     try:
-        data = requests.get("https://ipinfo.io/json", timeout=8).json()
-        current_ip   = data.get("ip")
-        current_ctry = data.get("country")
-        print(f"\U0001F310 Current IP: {current_ip}  Country: {current_ctry}")
-        return current_ctry == expected_country
+        data = requests.get('https://ipinfo.io/json', timeout=8).json()
+        return data.get('ip'), data.get('country')
     except Exception as e:
-        print(f"\u26a0\ufe0f Error checking VPN country: {e}")
-        return False
+        print(f"\u26a0\ufe0f Error fetching IP: {e}", flush=True)
+        return None, None
 
 def connect_to_vpn():
-    """Connect to VPN using OpenVPN command with retry logic."""
-    print("\U0001F512 Connecting to VPN via OpenVPN...")
-    
-    # Kill any existing openvpn processes
+    print("\U0001F512 Connecting to VPN via OpenVPN...", flush=True)
     for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
         if 'openvpn' in proc.info['name']:
-            print(f"Killing existing OpenVPN process: {proc.info['pid']}")
+            print(f"Killing existing OpenVPN process: {proc.info['pid']}", flush=True)
             proc.kill()
-    
     for attempt in range(VPN_CONFIG['max_retries']):
-        if is_vpn_connected():
-            print("\u2705 VPN is already connected with expected IP.")
-            return True
-        print(f"\u23F3 Starting OpenVPN... (attempt {attempt + 1}/{VPN_CONFIG['max_retries']})")
-        vpn_process = subprocess.Popen(
-            VPN_CONFIG['vpn_command'],
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
+        old_ip, _ = fetch_ip()
+        print(f"Current IP before VPN: {old_ip}", flush=True)
+        print(f"\u23F3 Starting OpenVPN... (attempt {attempt + 1}/{VPN_CONFIG['max_retries']})", flush=True)
+        cmd = VPN_CONFIG['vpn_cmd_list']
+        vpn_proc = subprocess.Popen(
+            cmd,
+            cwd='/etc/openvpn/client',
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
         )
-        time.sleep(10)  # Wait for VPN to establish
-        if is_vpn_connected():
-            print("\u2705 Successfully connected to VPN via OpenVPN.")
+        for line in vpn_proc.stdout:
+            print('VPN ▶', line.rstrip(), flush=True)
+            if 'Initialization Sequence Completed' in line:
+                break
+        # Poll until the public IP changes or timeout
+        success = False
+        for _ in range(30):
+            new_ip, country = fetch_ip()
+            print(f"Checking IP after VPN: {new_ip} Country: {country}", flush=True)
+            if new_ip and new_ip != old_ip:
+                print(f"\u2705 VPN connected. New IP: {new_ip} Country: {country}", flush=True)
+                success = True
+                break
+            time.sleep(1)
+        if success:
             return True
         else:
-            print(f"\u274C VPN connection failed, retrying in {VPN_CONFIG['retry_delay']}s...")
-            vpn_process.terminate()
+            print(f"\u274C VPN connection failed, retrying in {VPN_CONFIG['retry_delay']}s...", flush=True)
+            vpn_proc.terminate()
             time.sleep(VPN_CONFIG['retry_delay'])
-    print("\u274C Failed to connect to VPN after retries.")
+    print("\u274C Failed to connect to VPN after retries.", flush=True)
     return False
 
 def verify_vpn_connection():
