@@ -907,6 +907,28 @@ def handle_stay_logged_out(page):
     except Exception as e:
         print(f'⚠️ Could not click "Stay logged out": {e}')
 
+def fetch_ip_info(ip=None):
+    try:
+        if ip:
+            url = f"https://api.ipinfo.io/lite/{ip}?token=31f96943107147"
+        else:
+            url = "https://ipinfo.io/json"
+        data = requests.get(url, timeout=8).json()
+        print(f"\U0001F310 IP info for {ip or 'current'}: {data}", flush=True)
+        return data
+    except Exception as e:
+        print(f"\u26a0\ufe0f Error fetching IP info: {e}", flush=True)
+        return None
+
+def is_vpn_connected():
+    data = fetch_ip_info()
+    if not data:
+        return False
+    current_ip = data.get('ip')
+    country = data.get('country')
+    print(f"\U0001F310 Current IP: {current_ip}  Country: {country}", flush=True)
+    return country == 'US'
+
 def main():
     """Main function to run the bot"""
     driver = None

@@ -323,6 +323,19 @@ def fetch_ip():
         print(f"\u26a0\ufe0f Error fetching IP: {e}", flush=True)
         return None, None
 
+def fetch_ip_info(ip=None):
+    try:
+        if ip:
+            url = f"https://api.ipinfo.io/lite/{ip}?token=31f96943107147"
+        else:
+            url = "https://ipinfo.io/json"
+        data = requests.get(url, timeout=8).json()
+        print(f"\U0001F310 IP info for {ip or 'current'}: {data}", flush=True)
+        return data
+    except Exception as e:
+        print(f"\u26a0\ufe0f Error fetching IP info: {e}", flush=True)
+        return None
+
 def connect_to_vpn():
     print("\U0001F512 Connecting to VPN via OpenVPN...", flush=True)
     # Kill any existing openvpn processes
@@ -392,6 +405,15 @@ def disconnect_vpn():
         print("\u2705 OpenVPN disconnected")
     except Exception as e:
         print(f"\u26a0\ufe0f Error disconnecting OpenVPN: {e}")
+
+def is_vpn_connected():
+    data = fetch_ip_info()
+    if not data:
+        return False
+    current_ip = data.get('ip')
+    country = data.get('country')
+    print(f"\U0001F310 Current IP: {current_ip}  Country: {country}", flush=True)
+    return country == 'US'
 
 # === MAIN LOOP ===
 if __name__ == "__main__":
