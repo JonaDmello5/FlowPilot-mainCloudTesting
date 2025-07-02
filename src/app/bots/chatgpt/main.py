@@ -60,10 +60,9 @@ VPN_CONFIG = {
     'vpn_command': 'sudo openvpn --config /etc/openvpn/client/us_california.ovpn --auth-user-pass /etc/openvpn/client/auth.txt',
     'max_retries': 5,
     'retry_delay': 30  # seconds
-    # 'expected_ip': '103.124.207.167'  # Removed, now using country check
 }
 
-# expected_ip = "103.124.207.167"  # Remove this line if present
+# Remove any expected_ip logic
 expected_country = "US"
 
 # === HELPER FUNCTIONS ===

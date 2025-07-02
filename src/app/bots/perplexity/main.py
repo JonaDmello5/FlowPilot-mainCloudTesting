@@ -58,7 +58,6 @@ VPN_CONFIG = {
     'vpn_command': 'sudo openvpn --config /etc/openvpn/client/us_california.ovpn --auth-user-pass /etc/openvpn/client/auth.txt',
     'max_retries': 5,
     'retry_delay': 30  # seconds
-    # 'expected_ip': '103.124.207.167'  # Removed, now using country check
 }
 
 # === EOXS CONFIGURATION ===
@@ -313,7 +312,6 @@ def wait_for_response(driver, timeout=90):
         return "Error getting response"
 
 def is_vpn_connected():
-    """Check if the current IP is a US IP using ipinfo.io."""
     try:
         data = requests.get("https://ipinfo.io/json", timeout=8).json()
         current_ip   = data.get("ip")
