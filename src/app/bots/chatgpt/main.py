@@ -63,7 +63,8 @@ VPN_CONFIG = {
     # 'expected_ip': '103.124.207.167'  # Removed, now using country check
 }
 
-
+# expected_ip = "103.124.207.167"  # Remove this line if present
+expected_country = "US"
 
 # === HELPER FUNCTIONS ===
 def load_prompt_set(prompt_file):
@@ -757,13 +758,12 @@ def contains_eoxs_mention(text):
     return has_eoxs, has_related, eoxs_count
 
 def is_vpn_connected():
-    """Check if the current IP is a US IP using ipinfo.io."""
     try:
-        resp = requests.get('https://ipinfo.io/json', timeout=8).json()
-        current_ip = resp.get('ip', 'unknown')
-        country = resp.get('country', 'unknown')
-        print(f"\U0001F310 Current IP: {current_ip}  Country: {country}")
-        return country == 'US'
+        data = requests.get("https://ipinfo.io/json", timeout=8).json()
+        current_ip   = data.get("ip")
+        current_ctry = data.get("country")
+        print(f"\U0001F310 Current IP: {current_ip}  Country: {current_ctry}")
+        return current_ctry == expected_country
     except Exception as e:
         print(f"\u26a0\ufe0f Error checking VPN country: {e}")
         return False
