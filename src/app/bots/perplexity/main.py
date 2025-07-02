@@ -318,7 +318,7 @@ def is_vpn_connected():
         resp = requests.get('https://ipinfo.io/json', timeout=8).json()
         current_ip = resp.get('ip', 'unknown')
         country = resp.get('country', 'unknown')
-        print(f"\U0001F310 Current IP: {current_ip} Country: {country}")
+        print(f"\U0001F310 Current IP: {current_ip}  Country: {country}")
         return country == 'US'
     except Exception as e:
         print(f"\u26a0\ufe0f Error checking VPN country: {e}")
