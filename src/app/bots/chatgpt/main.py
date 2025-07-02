@@ -61,8 +61,7 @@ VPN_CONFIG = {
         '/usr/sbin/openvpn',
         '--config', '/etc/openvpn/client/us_california.ovpn',
         '--auth-user-pass', '/etc/openvpn/client/auth.txt',
-        '--auth-nocache',
-        '--daemon'
+        '--auth-nocache'
     ],
     'max_retries': 5,
     'retry_delay': 30
