@@ -32,8 +32,8 @@ def _cleanup(signum=None, frame=None):
             driver.quit()
         except Exception:
             pass
-    if signum is not None:
-        sys.exit(0)
+    # if signum is not None:
+    #     sys.exit(0)  # Removed to avoid warning in atexit handler
 
 # Register cleanup handlers
 signal.signal(signal.SIGTERM, _cleanup)
@@ -54,6 +54,7 @@ LOG_FILE = os.path.join(BOT_DIR, 'logs', 'logs.csv')
 
 # === VPN CONFIGURATION ===
 VPN_CONFIG = {
+    
     'vpn_cmd_list': [
         '/usr/sbin/openvpn',
         '--config', '/etc/openvpn/client/us_california.ovpn',
@@ -343,7 +344,6 @@ def connect_to_vpn():
         if 'openvpn' in proc.info['name']:
             print(f"Killing existing OpenVPN process: {proc.info['pid']}", flush=True)
             proc.kill()
-    
     for attempt in range(VPN_CONFIG['max_retries']):
         ip_before, _ = fetch_ip()
         print(f"Current IP before VPN: {ip_before}", flush=True)
@@ -368,12 +368,28 @@ def connect_to_vpn():
             vpn_proc.terminate()
             time.sleep(VPN_CONFIG['retry_delay'])
             continue
+        # Wait for DNS/tun0 to be ready before checking public IP
+        dns_ready = False
+        for _ in range(10):  # wait up to 10 seconds for DNS/tun0
+            ip_test, _ = fetch_ip()
+            if ip_test:
+                dns_ready = True
+                break
+            time.sleep(1)
+        if not dns_ready:
+            print("⚠️ DNS/tun0 not ready after OpenVPN init, retrying...", flush=True)
+            vpn_proc.terminate()
+            time.sleep(VPN_CONFIG['retry_delay'])
+            continue
         # Wait for public IP to change
         success = False
         for _ in range(30):  # up to 30 seconds
             ip_after, country = fetch_ip()
+            if not ip_after:
+                time.sleep(1)
+                continue  # Skip log if DNS/IP not ready
             print(f"Checking IP after VPN: {ip_after} Country: {country}", flush=True)
-            if ip_after and ip_after != ip_before:
+            if ip_after != ip_before:
                 print(f"\u2705 VPN connected. New IP: {ip_after} Country: {country}", flush=True)
                 success = True
                 break

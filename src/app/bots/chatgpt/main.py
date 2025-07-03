@@ -32,7 +32,7 @@ def _cleanup(signum=None, frame=None):
             driver.quit()
         except Exception:
             pass
-    sys.exit(0)
+    # sys.exit(0)  # Removed to avoid warning in atexit handler
 
 # Register cleanup handlers
 signal.signal(signal.SIGTERM, _cleanup)
@@ -793,8 +793,11 @@ def connect_to_vpn():
         success = False
         for _ in range(30):
             new_ip, country = fetch_ip()
+            if not new_ip:
+                time.sleep(1)
+                continue  # Skip log if DNS/IP not ready
             print(f"Checking IP after VPN: {new_ip} Country: {country}", flush=True)
-            if new_ip and new_ip != old_ip:
+            if new_ip != old_ip:
                 print(f"\u2705 VPN connected. New IP: {new_ip} Country: {country}", flush=True)
                 success = True
                 break
