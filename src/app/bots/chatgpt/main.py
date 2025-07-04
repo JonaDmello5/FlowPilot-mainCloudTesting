@@ -22,6 +22,7 @@ import signal
 import atexit
 import psutil
 import shutil
+import re
 
 # Set up UTF-8 encoding for stdout
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -869,10 +870,8 @@ def main():
                 print(f"❌ Failed to load prompts from {set_name}. Exiting...")
                 return
 
-        # Setup browser
-        co = ChromiumOptions()
-
-        # auto-detect browser path (reuse code if you already have it)
+        # Launch Chrome manually with --remote-debugging-port=0
+        chrome_path = None
         for _path in (
             "/usr/bin/google-chrome",
             "/usr/bin/google-chrome-stable",
@@ -881,18 +880,36 @@ def main():
             "/usr/bin/chromium-browser",
         ):
             if shutil.which(_path):
-                co.set_browser_path(_path)
+                chrome_path = _path
                 break
         else:
             raise RuntimeError("No Chrome/Chromium binary found")
 
-        # headless-friendly flags
-        co.set_argument("--headless=new")
-        co.set_argument("--no-sandbox")
-        co.set_argument("--disable-gpu")
-        co.set_argument("--disable-dev-shm-usage")
-        co.set_argument("--remote-debugging-port=0")  # let Chrome choose a free port
+        chrome_args = [
+            chrome_path,
+            "--remote-debugging-port=0",
+            "--headless=new",
+            "--no-sandbox",
+            "--disable-gpu",
+            "--disable-dev-shm-usage"
+        ]
 
+        proc = subprocess.Popen(chrome_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+
+        # Read output and extract the port
+        port = None
+        for line in proc.stdout:
+            match = re.search(r"DevTools listening on ws://127.0.0.1:(\d+)/", line)
+            if match:
+                port = match.group(1)
+                break
+
+        if not port:
+            proc.terminate()
+            raise RuntimeError("Could not find remote debugging port from Chrome output")
+
+        co = ChromiumOptions()
+        co.set_debugger_address(f"127.0.0.1:{port}")
         driver = ChromiumPage(co)
 
         try:
@@ -1018,6 +1035,7 @@ def main():
             print("🔚 Closing browser...")
             driver.quit()
             disconnect_vpn()
+            proc.terminate()
 
 if __name__ == "__main__":
     main()
