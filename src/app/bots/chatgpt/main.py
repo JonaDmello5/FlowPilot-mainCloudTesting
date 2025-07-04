@@ -871,7 +871,9 @@ def main():
                 return
 
         # Launch Chrome manually with --remote-debugging-port=0
-        chrome_path = None
+        co = ChromiumOptions()
+
+        # auto-detect browser path
         for _path in (
             "/usr/bin/google-chrome",
             "/usr/bin/google-chrome-stable",
@@ -880,36 +882,17 @@ def main():
             "/usr/bin/chromium-browser",
         ):
             if shutil.which(_path):
-                chrome_path = _path
+                co.set_browser_path(_path)
                 break
         else:
             raise RuntimeError("No Chrome/Chromium binary found")
 
-        chrome_args = [
-            chrome_path,
-            "--remote-debugging-port=0",
-            "--headless=new",
-            "--no-sandbox",
-            "--disable-gpu",
-            "--disable-dev-shm-usage"
-        ]
+        co.set_argument("--headless=new")
+        co.set_argument("--no-sandbox")
+        co.set_argument("--disable-gpu")
+        co.set_argument("--disable-dev-shm-usage")
+        co.set_argument("--remote-debugging-port=9222")  # Use a fixed port
 
-        proc = subprocess.Popen(chrome_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-
-        # Read output and extract the port
-        port = None
-        for line in proc.stdout:
-            match = re.search(r"DevTools listening on ws://127.0.0.1:(\d+)/", line)
-            if match:
-                port = match.group(1)
-                break
-
-        if not port:
-            proc.terminate()
-            raise RuntimeError("Could not find remote debugging port from Chrome output")
-
-        co = ChromiumOptions()
-        co.set_debugger_address(f"127.0.0.1:{port}")
         driver = ChromiumPage(co)
 
         try:
@@ -1035,7 +1018,6 @@ def main():
             print("🔚 Closing browser...")
             driver.quit()
             disconnect_vpn()
-            proc.terminate()
 
 if __name__ == "__main__":
     main()
