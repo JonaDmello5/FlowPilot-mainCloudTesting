@@ -13,7 +13,7 @@ import sys
 import os
 from datetime import datetime
 from bs4 import BeautifulSoup
-from DrissionPage import ChromiumPage
+from DrissionPage import ChromiumOptions, ChromiumPage
 import openpyxl
 from openpyxl.styles import PatternFill
 from time import sleep
