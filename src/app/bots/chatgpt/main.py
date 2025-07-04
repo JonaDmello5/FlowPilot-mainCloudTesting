@@ -993,6 +993,7 @@ def main():
         if driver:
             print("🔚 Closing browser...")
             driver.quit()
+            disconnect_vpn()
 
 if __name__ == "__main__":
     main()
