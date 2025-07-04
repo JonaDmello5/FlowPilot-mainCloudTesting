@@ -14,13 +14,28 @@ import signal
 import atexit
 import psutil
 from pathlib import Path
+import shutil
 sys.path.append(str((Path(__file__).resolve().parents[3] / "lib").resolve()))
 from vpn_helper import start_vpn
-start_vpn()
 
-os.environ["DP_BROWSER_PATH"] = "/usr/bin/chromium-browser"  # or /usr/bin/google-chrome
-
-# === IMPORTS THAT NEED OUR PATHS DEFINED FIRST ===
+# --- DrissionPage browser auto-detect ---
+for _candidate in (
+    "/usr/bin/google-chrome",
+    "/usr/bin/google-chrome-stable",
+    "/usr/lib/chromium-browser/chromium-browser",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+):
+    if shutil.which(_candidate):
+        os.environ["DP_BROWSER_PATH"] = _candidate
+        break
+else:
+    raise RuntimeError(
+        "No Chrome/Chromium binary found. "
+        "Install google-chrome-stable or chromium-browser "
+        "and rerun the bot."
+    )
+# --- end auto-detect ---
 
 # Set up UTF-8 encoding for stdout
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
