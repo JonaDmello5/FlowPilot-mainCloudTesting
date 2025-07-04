@@ -22,7 +22,7 @@ const IST_TIMEZONE = 'Asia/Kolkata';
 async function triggerBotStart(botName: string) {
   console.log(`[Scheduler] Attempting to start bot: ${botName}`);
   try {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
     const response = await fetch(`${appUrl}/api/bots/${botName}/start`, {
       method: 'POST',
       headers: {
@@ -56,7 +56,7 @@ async function triggerBotStart(botName: string) {
 async function triggerBotStop(botName: string) {
   console.log(`[Scheduler] Attempting to stop bot: ${botName}`);
   try {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
     const response = await fetch(`${appUrl}/api/bots/${botName}/stop`, {
       method: 'POST',
       headers: {
