@@ -335,7 +335,7 @@ if __name__ == "__main__":
     co.set_browser_path(os.environ["DP_BROWSER_PATH"])
 
     # headless / server-safe flags
-    co.set_argument("--headless=new")
+    # co.set_argument("--headless=new")
     co.set_argument("--no-sandbox")
     co.set_argument("--disable-dev-shm-usage")
     co.set_argument("--remote-debugging-port=0")
