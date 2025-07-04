@@ -1,3 +1,4 @@
+// @ts-expect-error: Node.js built-in module used in API route
 import { exec } from "child_process";
 
 /**
@@ -7,7 +8,7 @@ import { exec } from "child_process";
  */
 export async function POST() {
   return new Promise<Response>((resolve) => {
-    exec("pm2 start chatgpt-bot", (err, stdout, stderr) => {
+    exec("pm2 start chatgpt-bot", (err: Error | null, stdout: string, stderr: string) => {
       const okExit = !err;
       const alreadyRunning =
         /already\s+online|name\s+.*exist|Process\s+successfully\s+started/i.test(
@@ -15,10 +16,23 @@ export async function POST() {
         );
 
       if (okExit || alreadyRunning) {
-        resolve(new Response("chatgpt-bot running", { status: 200 }));
+        resolve(
+          new Response(JSON.stringify({ ok: true }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          })
+        );
       } else {
         console.error("pm2 start error:", stderr);
-        resolve(new Response(stderr.trim() || "pm2 start failed", { status: 500 }));
+        resolve(
+          new Response(
+            JSON.stringify({ ok: false, error: stderr.trim() || "pm2 start failed" }),
+            {
+              status: 500,
+              headers: { "Content-Type": "application/json" },
+            }
+          )
+        );
       }
     });
   });
