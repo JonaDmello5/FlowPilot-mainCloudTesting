@@ -333,10 +333,16 @@ if __name__ == "__main__":
     # ---------- DrissionPage headless config ----------
     co = ChromiumOptions()
     co.set_browser_path(os.environ["DP_BROWSER_PATH"])
-    co.set_argument("--headless=new")           # modern headless mode
-    co.set_argument("--no-sandbox")             # needed on many servers
-    co.set_argument("--disable-dev-shm-usage")  # avoid /dev/shm limits
-    co.set_argument("--remote-debugging-port=0")  # let Chrome pick a free port
+
+    # headless / server-safe flags
+    co.set_argument("--headless=new")
+    co.set_argument("--no-sandbox")
+    co.set_argument("--disable-dev-shm-usage")
+    co.set_argument("--remote-debugging-port=0")
+    co.set_argument("--disable-gpu")
+    co.set_argument("--disable-software-rasterizer")
+    co.set_argument("--no-startup-window")
+
     driver = ChromiumPage(co)
     # ---------- end DrissionPage config  ----------
 
