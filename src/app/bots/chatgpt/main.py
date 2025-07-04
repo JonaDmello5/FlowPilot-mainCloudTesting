@@ -23,6 +23,7 @@ import atexit
 import psutil
 import shutil
 import re
+from chatgpt_flow import launch_chatgpt_browser
 
 # Set up UTF-8 encoding for stdout
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -871,29 +872,7 @@ def main():
                 return
 
         # Launch Chrome manually with --remote-debugging-port=0
-        co = ChromiumOptions()
-
-        # auto-detect browser path
-        for _path in (
-            "/usr/bin/google-chrome",
-            "/usr/bin/google-chrome-stable",
-            "/usr/lib/chromium-browser/chromium-browser",
-            "/usr/bin/chromium",
-            "/usr/bin/chromium-browser",
-        ):
-            if shutil.which(_path):
-                co.set_browser_path(_path)
-                break
-        else:
-            raise RuntimeError("No Chrome/Chromium binary found")
-
-        co.set_argument("--headless=new")
-        co.set_argument("--no-sandbox")
-        co.set_argument("--disable-gpu")
-        co.set_argument("--disable-dev-shm-usage")
-        co.set_argument("--remote-debugging-port=9222")  # Use a fixed port
-
-        driver = ChromiumPage(co)
+        driver = launch_chatgpt_browser(port=9222)
 
         try:
             # Open ChatGPT
