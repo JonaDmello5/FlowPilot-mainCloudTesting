@@ -9,7 +9,7 @@ import os
 import io
 from datetime import datetime
 from bs4 import BeautifulSoup
-from DrissionPage import ChromiumPage
+from DrissionPage import ChromiumOptions, ChromiumPage
 import signal
 import atexit
 import psutil
@@ -328,7 +328,17 @@ if __name__ == "__main__":
     prompts = load_prompts()
 
     # Setup browser
-    driver = ChromiumPage()
+    from DrissionPage import ChromiumOptions, ChromiumPage
+
+    # ---------- DrissionPage headless config ----------
+    co = ChromiumOptions()
+    co.set_browser_path(os.environ["DP_BROWSER_PATH"])   # path set earlier
+    co.add_argument("--headless=new")                    # modern headless mode
+    co.add_argument("--no-sandbox")                      # required on many servers
+    co.add_argument("--disable-dev-shm-usage")           # avoid /dev/shm limits
+    co.set_argument("--remote-debugging-port=0")         # let Chrome pick a free port
+    driver = ChromiumPage(co)
+    # ---------- end DrissionPage config  ----------
 
     try:
         run_perplexity_flow(driver, prompts, PLATFORM_URL, LOG_FILE, EOXS_PARAGRAPH, lambda: True, log_session)
