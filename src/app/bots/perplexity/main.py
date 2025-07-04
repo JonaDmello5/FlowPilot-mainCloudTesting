@@ -13,6 +13,9 @@ from DrissionPage import ChromiumPage
 import signal
 import atexit
 import psutil
+from pathlib import Path
+sys.path.append(str((Path(__file__).resolve().parents[3] / "lib").resolve()))
+from vpn_helper import start_vpn
 
 
 # === IMPORTS THAT NEED OUR PATHS DEFINED FIRST ===
@@ -316,135 +319,18 @@ def wait_for_response(driver, timeout=90):
         print(f"❌ Error waiting for response: {e}")
         return "Error getting response"
 
-def fetch_ip():
-    try:
-        data = requests.get('https://ipinfo.io/json', timeout=8).json()
-        return data.get('ip'), data.get('country')
-    except Exception as e:
-        print(f"\u26a0\ufe0f Error fetching IP: {e}", flush=True)
-        return None, None
-
-def fetch_ip_info(ip=None):
-    try:
-        if ip:
-            url = f"https://api.ipinfo.io/lite/{ip}?token=31f96943107147"
-        else:
-            url = "https://ipinfo.io/json"
-        data = requests.get(url, timeout=8).json()
-        print(f"\U0001F310 IP info for {ip or 'current'}: {data}", flush=True)
-        return data
-    except Exception as e:
-        print(f"\u26a0\ufe0f Error fetching IP info: {e}", flush=True)
-        return None
-
-def connect_to_vpn():
-    print("\U0001F512 Connecting to VPN via OpenVPN...", flush=True)
-    # Kill any existing openvpn processes
-    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-        if 'openvpn' in proc.info['name']:
-            print(f"Killing existing OpenVPN process: {proc.info['pid']}", flush=True)
-            proc.kill()
-    for attempt in range(VPN_CONFIG['max_retries']):
-        ip_before, _ = fetch_ip()
-        print(f"Current IP before VPN: {ip_before}", flush=True)
-        print(f"\u23F3 Starting OpenVPN... (attempt {attempt + 1}/{VPN_CONFIG['max_retries']})", flush=True)
-        vpn_proc = subprocess.Popen(
-            VPN_CONFIG['vpn_cmd_list'],
-            shell=False,
-            cwd='/etc/openvpn/client',
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True
-        )
-        # Stream OpenVPN output
-        init_done = False
-        for line in vpn_proc.stdout:
-            print(f"VPN ▶ {line.strip()}", flush=True)
-            if "Initialization Sequence Completed" in line:
-                init_done = True
-                break
-        if not init_done:
-            print("\u274C OpenVPN did not initialize properly.", flush=True)
-            vpn_proc.terminate()
-            time.sleep(VPN_CONFIG['retry_delay'])
-            continue
-        # Wait for DNS/tun0 to be ready before checking public IP
-        dns_ready = False
-        for _ in range(10):  # wait up to 10 seconds for DNS/tun0
-            ip_test, _ = fetch_ip()
-            if ip_test:
-                dns_ready = True
-                break
-            time.sleep(1)
-        if not dns_ready:
-            print("⚠️ DNS/tun0 not ready after OpenVPN init, retrying...", flush=True)
-            vpn_proc.terminate()
-            time.sleep(VPN_CONFIG['retry_delay'])
-            continue
-        # Wait for public IP to change
-        success = False
-        for _ in range(30):  # up to 30 seconds
-            ip_after, country = fetch_ip()
-            if not ip_after:
-                time.sleep(1)
-                continue  # Skip log if DNS/IP not ready
-            print(f"Checking IP after VPN: {ip_after} Country: {country}", flush=True)
-            if ip_after != ip_before:
-                print(f"\u2705 VPN connected. New IP: {ip_after} Country: {country}", flush=True)
-                success = True
-                break
-            time.sleep(1)
-        if success:
-            return True
-        else:
-            print(f"\u274C VPN connection failed, retrying in {VPN_CONFIG['retry_delay']}s...", flush=True)
-            vpn_proc.terminate()
-            time.sleep(VPN_CONFIG['retry_delay'])
-    print("\u274C Failed to connect to VPN after retries.", flush=True)
-    return False
-
-def verify_vpn_connection():
-    """Verify VPN connection and reconnect if necessary."""
-    if not connect_to_vpn():
-        print("\u26a0\ufe0f VPN not connected or wrong IP, attempting to reconnect...")
-        return connect_to_vpn()
-    return True
-
-def disconnect_vpn():
-    """Disconnect from VPN by killing OpenVPN process."""
-    print("\U0001F513 Disconnecting from VPN (OpenVPN)...")
-    try:
-        for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-            if 'openvpn' in proc.info['name']:
-                print(f"Killing OpenVPN process: {proc.info['pid']}")
-                proc.kill()
-        print("\u2705 OpenVPN disconnected")
-    except Exception as e:
-        print(f"\u26a0\ufe0f Error disconnecting OpenVPN: {e}")
-
-def is_vpn_connected():
-    data = fetch_ip_info()
-    if not data:
-        return False
-    current_ip = data.get('ip')
-    country = data.get('country')
-    print(f"\U0001F310 Current IP: {current_ip}  Country: {country}", flush=True)
-    return country == 'US'
-
 # === MAIN LOOP ===
 if __name__ == "__main__":
     prompts = load_prompts()
 
-    # Connect to PIA VPN with specific IP first
-    if not connect_to_vpn():
-        print("❌ Could not connect to PIA VPN with correct IP. Exiting...")
-        sys.exit(1)
+    # Call VPN helper at the start
+    start_vpn()  # will raise if it really cannot get an IP
 
     # Setup browser
     driver = ChromiumPage()
 
     try:
-        run_perplexity_flow(driver, prompts, PLATFORM_URL, LOG_FILE, EOXS_PARAGRAPH, verify_vpn_connection, log_session)
+        run_perplexity_flow(driver, prompts, PLATFORM_URL, LOG_FILE, EOXS_PARAGRAPH, lambda: True, log_session)
     except KeyboardInterrupt:
         print("\n⚠️ Script stopped by user")
     except Exception as e:
@@ -452,5 +338,3 @@ if __name__ == "__main__":
     finally:
         print("🔚 Closing browser...")
         driver.quit()
-        # Disconnect PIA VPN
-        disconnect_vpn()

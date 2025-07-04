@@ -1,3 +1,7 @@
+from pathlib import Path
+import sys
+sys.path.append(str((Path(__file__).resolve().parents[3] / "lib").resolve()))
+from vpn_helper import start_vpn
 import random
 import time
 import json
@@ -936,6 +940,9 @@ def main():
     """Main function to run the bot"""
     driver = None
     try:
+        # Call VPN helper at the start
+        start_vpn()  # will raise if it really cannot get an IP
+
         # Load all prompt sets
         prompt_sets = {}
         base_path = os.path.join(os.path.dirname(__file__), "prompts")
