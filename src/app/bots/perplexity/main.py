@@ -18,6 +18,7 @@ sys.path.append(str((Path(__file__).resolve().parents[3] / "lib").resolve()))
 from vpn_helper import start_vpn
 start_vpn()
 
+os.environ["DP_BROWSER_PATH"] = "/usr/bin/chromium-browser"  # or /usr/bin/google-chrome
 
 # === IMPORTS THAT NEED OUR PATHS DEFINED FIRST ===
 

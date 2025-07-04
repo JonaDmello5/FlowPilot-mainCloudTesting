@@ -29,6 +29,8 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 # Global driver for cleanup
 driver = None
 
+os.environ["DP_BROWSER_PATH"] = "/usr/bin/chromium-browser"  # or /usr/bin/google-chrome
+
 def _cleanup(signum=None, frame=None):
     global driver
     if driver:
@@ -43,6 +45,14 @@ def _cleanup(signum=None, frame=None):
 signal.signal(signal.SIGTERM, _cleanup)
 signal.signal(signal.SIGINT, _cleanup)
 atexit.register(_cleanup)
+
+def disconnect_vpn():
+    """Gracefully stop OpenVPN if running; ignore errors."""
+    try:
+        subprocess.run(["sudo", "pkill", "-f", "openvpn"], check=False)
+        print("🔻 VPN tunnel closed.")
+    except Exception as e:
+        print("Could not close VPN:", e)
 
 # === CONFIGURATION ===
 PLATFORM_URL = "https://chatgpt.com/"  # Direct to chat interface
@@ -900,11 +910,6 @@ def main():
 
             # Main flow
             while prompt_count < max_prompts and failed_attempts < max_failures:
-                # Check VPN connection periodically
-                if prompt_count % 5 == 0:
-                    if not verify_vpn_connection():
-                        print("❌ Could not maintain VPN connection. Exiting...")
-                        break
                 wait_for_generation_complete(driver, max_wait=45)
 
                 # --- Start with p1 ---
@@ -988,8 +993,6 @@ def main():
         if driver:
             print("🔚 Closing browser...")
             driver.quit()
-        # Disconnect PIA VPN
-        disconnect_vpn()
 
 if __name__ == "__main__":
     main()
