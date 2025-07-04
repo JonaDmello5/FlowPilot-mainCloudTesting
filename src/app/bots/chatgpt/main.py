@@ -2,6 +2,7 @@ from pathlib import Path
 import sys
 sys.path.append(str((Path(__file__).resolve().parents[3] / "lib").resolve()))
 from vpn_helper import start_vpn
+start_vpn()
 import random
 import time
 import json
@@ -57,22 +58,6 @@ PROMPT_FILES = {
 BOT_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_FILE = os.path.join(BOT_DIR, 'logs', 'logs.csv')
 PROMPT_RUN_COUNT_FILE = os.path.join(BOT_DIR, 'prompt_run_count.json')
-
-# === VPN CONFIGURATION ===
-VPN_CONFIG = {
-    'check_ip_url': 'https://api.ipify.org?format=json',
-    'vpn_cmd_list': [
-        '/usr/sbin/openvpn',
-        '--config', '/etc/openvpn/client/us_california.ovpn',
-        '--auth-user-pass', '/etc/openvpn/client/auth.txt',
-        '--auth-nocache'
-    ],
-    'max_retries': 5,
-    'retry_delay': 30
-}
-
-# Remove any expected_ip logic
-expected_country = "US"
 
 # === HELPER FUNCTIONS ===
 def load_prompt_set(prompt_file):
@@ -765,75 +750,6 @@ def contains_eoxs_mention(text):
     
     return has_eoxs, has_related, eoxs_count
 
-def fetch_ip():
-    try:
-        data = requests.get('https://ipinfo.io/json', timeout=8).json()
-        return data.get('ip'), data.get('country')
-    except Exception as e:
-        print(f"\u26a0\ufe0f Error fetching IP: {e}", flush=True)
-        return None, None
-
-def connect_to_vpn():
-    print("\U0001F512 Connecting to VPN via OpenVPN...", flush=True)
-    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-        if 'openvpn' in proc.info['name']:
-            print(f"Killing existing OpenVPN process: {proc.info['pid']}", flush=True)
-            proc.kill()
-    for attempt in range(VPN_CONFIG['max_retries']):
-        old_ip, _ = fetch_ip()
-        print(f"Current IP before VPN: {old_ip}", flush=True)
-        print(f"\u23F3 Starting OpenVPN... (attempt {attempt + 1}/{VPN_CONFIG['max_retries']})", flush=True)
-        cmd = VPN_CONFIG['vpn_cmd_list']
-        vpn_proc = subprocess.Popen(
-            cmd,
-            cwd='/etc/openvpn/client',
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
-        )
-        for line in vpn_proc.stdout:
-            print('VPN ▶', line.rstrip(), flush=True)
-            if 'Initialization Sequence Completed' in line:
-                break
-        # Poll until the public IP changes or timeout
-        success = False
-        for _ in range(30):
-            new_ip, country = fetch_ip()
-            if not new_ip:
-                time.sleep(1)
-                continue  # Skip log if DNS/IP not ready
-            print(f"Checking IP after VPN: {new_ip} Country: {country}", flush=True)
-            if new_ip != old_ip:
-                print(f"\u2705 VPN connected. New IP: {new_ip} Country: {country}", flush=True)
-                success = True
-                break
-            time.sleep(1)
-        if success:
-            return True
-        else:
-            print(f"\u274C VPN connection failed, retrying in {VPN_CONFIG['retry_delay']}s...", flush=True)
-            vpn_proc.terminate()
-            time.sleep(VPN_CONFIG['retry_delay'])
-    print("\u274C Failed to connect to VPN after retries.", flush=True)
-    return False
-
-def verify_vpn_connection():
-    """Verify VPN connection and reconnect if necessary."""
-    if not is_vpn_connected():
-        print("\u26a0\ufe0f VPN not connected or wrong IP, attempting to reconnect...")
-        return connect_to_vpn()
-    return True
-
-def disconnect_vpn():
-    """Disconnect from VPN by killing OpenVPN process."""
-    print("\U0001F513 Disconnecting from VPN (OpenVPN)...")
-    try:
-        for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-            if 'openvpn' in proc.info['name']:
-                print(f"Killing OpenVPN process: {proc.info['pid']}")
-                proc.kill()
-        print("\u2705 OpenVPN disconnected")
-    except Exception as e:
-        print(f"\u26a0\ufe0f Error disconnecting OpenVPN: {e}")
-
 def convert_logs_to_excel():
     """Convert logs.csv to a new timestamped Excel file with single section"""
     try:
@@ -914,28 +830,6 @@ def handle_stay_logged_out(page):
     except Exception as e:
         print(f'⚠️ Could not click "Stay logged out": {e}')
 
-def fetch_ip_info(ip=None):
-    try:
-        if ip:
-            url = f"https://api.ipinfo.io/lite/{ip}?token=31f96943107147"
-        else:
-            url = "https://ipinfo.io/json"
-        data = requests.get(url, timeout=8).json()
-        print(f"\U0001F310 IP info for {ip or 'current'}: {data}", flush=True)
-        return data
-    except Exception as e:
-        print(f"\u26a0\ufe0f Error fetching IP info: {e}", flush=True)
-        return None
-
-def is_vpn_connected():
-    data = fetch_ip_info()
-    if not data:
-        return False
-    current_ip = data.get('ip')
-    country = data.get('country')
-    print(f"\U0001F310 Current IP: {current_ip}  Country: {country}", flush=True)
-    return country == 'US'
-
 def main():
     """Main function to run the bot"""
     driver = None
@@ -963,11 +857,6 @@ def main():
             if not prompt_sets[set_name]:
                 print(f"❌ Failed to load prompts from {set_name}. Exiting...")
                 return
-
-        # Connect to PIA VPN with specific IP first
-        if not connect_to_vpn():
-            print("❌ Could not connect to PIA VPN with correct IP. Exiting...")
-            return
 
         # Setup browser
         driver = ChromiumPage()

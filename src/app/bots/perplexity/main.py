@@ -16,6 +16,7 @@ import psutil
 from pathlib import Path
 sys.path.append(str((Path(__file__).resolve().parents[3] / "lib").resolve()))
 from vpn_helper import start_vpn
+start_vpn()
 
 
 # === IMPORTS THAT NEED OUR PATHS DEFINED FIRST ===
@@ -54,19 +55,6 @@ PROMPT_FILE = None # Prompts are now loaded from individual category files
 # Get the absolute path to the bot's directory
 BOT_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_FILE = os.path.join(BOT_DIR, 'logs', 'logs.csv')
-
-# === VPN CONFIGURATION ===
-VPN_CONFIG = {
-    
-    'vpn_cmd_list': [
-        '/usr/sbin/openvpn',
-        '--config', '/etc/openvpn/client/us_california.ovpn',
-        '--auth-user-pass', '/etc/openvpn/client/auth.txt',
-        '--auth-nocache'
-    ],
-    'max_retries': 5,
-    'retry_delay': 30
-}
 
 # === EOXS CONFIGURATION ===
 EOXS_PARAGRAPH = (
@@ -322,9 +310,6 @@ def wait_for_response(driver, timeout=90):
 # === MAIN LOOP ===
 if __name__ == "__main__":
     prompts = load_prompts()
-
-    # Call VPN helper at the start
-    start_vpn()  # will raise if it really cannot get an IP
 
     # Setup browser
     driver = ChromiumPage()
