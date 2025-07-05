@@ -872,7 +872,7 @@ def main():
                 return
 
         # Launch Chrome manually with --remote-debugging-port=0
-        driver = launch_chatgpt_browser(port=9222)
+        driver = launch_chatgpt_browser(port=9223)
 
         try:
             # Open ChatGPT

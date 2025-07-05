@@ -338,7 +338,7 @@ if __name__ == "__main__":
     # co.set_argument("--headless=new")
     co.set_argument("--no-sandbox")
     co.set_argument("--disable-dev-shm-usage")
-    co.set_argument("--remote-debugging-port=0")
+    co.set_argument("--remote-debugging-port=9222")
     co.set_argument("--disable-gpu")
     co.set_argument("--disable-software-rasterizer")
     co.set_argument("--no-startup-window")
