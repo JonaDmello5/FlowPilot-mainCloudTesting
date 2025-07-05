@@ -871,8 +871,9 @@ def main():
                 print(f"❌ Failed to load prompts from {set_name}. Exiting...")
                 return
 
-        # Launch Chrome manually with --remote-debugging-port=0
-        driver = launch_chatgpt_browser(port=9223)
+        # Launch Chrome manually with --remote-debugging-port=9222
+        # Always use port 9222 for remote debugging to avoid conflicts
+        driver = launch_chatgpt_browser(port=9222)
 
         try:
             # Open ChatGPT
