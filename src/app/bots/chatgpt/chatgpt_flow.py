@@ -24,11 +24,12 @@ def launch_chatgpt_browser(port=9222):
     else:
         raise RuntimeError("No Chrome/Chromium binary found")
 
-    # co.set_argument("--headless=new")
+    co.set_argument("--headless=new")
     co.set_argument("--no-sandbox")
     co.set_argument("--disable-gpu")
     co.set_argument("--disable-dev-shm-usage")
     co.set_argument(f"--remote-debugging-port={port}")
+    co.set_argument(f"--user-data-dir=/tmp/chrome_profile_{port}")
 
     driver = ChromiumPage(co)
     print(f"[SUCCESS] Launched new browser on port {port}.")
