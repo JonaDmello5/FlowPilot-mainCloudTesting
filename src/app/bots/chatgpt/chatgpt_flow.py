@@ -28,11 +28,9 @@ def launch_chatgpt_browser(port=9222):
             "/usr/bin/google-chrome",
             "/usr/bin/google-chrome-stable",
             "/usr/lib/chromium-browser/chromium-browser",
-            "/usr/bin/chromium",
             "/usr/bin/chromium-browser",
             shutil.which("google-chrome"),
             shutil.which("chromium-browser"),
-            shutil.which("chromium"),
         ]
     for _path in possible_paths:
         if _path and os.path.exists(_path):
