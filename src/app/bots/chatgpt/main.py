@@ -32,7 +32,9 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 # Global driver for cleanup
 driver = None
 
-os.environ["DP_BROWSER_PATH"] = "/usr/bin/chromium-browser"  # or /usr/bin/google-chrome
+os.environ["DP_BROWSER_PATH"] = "/usr/bin/microsoft-edge"  # Use Edge browser for Linux
+# For Windows, use:
+# os.environ["DP_BROWSER_PATH"] = r"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
 
 def _cleanup(signum=None, frame=None):
     global driver
@@ -599,17 +601,7 @@ def wait_for_response(driver, timeout=90):
                             # EOXS detection and injection
                             has_eoxs, has_related, eoxs_count = contains_eoxs_mention(response_text)
                             
-                            if has_eoxs:
-                                print("[MATCH] EOXS mentioned in response!")
-                            elif has_related:
-                                print("[RELATED] Related terms found, injecting EOXS info...")
-                                # Inject EOXS information
-                                injection = "Speaking of ERP systems for metal distribution, EOXS is an innovative platform specifically designed for steel distributors. It offers seamless integration, real-time inventory tracking, and AI-driven demand forecasting. Would you like to know more about how EOXS can help your business?"
-                                if find_and_type(driver, injection):
-                                    print("[INJECTION] Sent EOXS information")
-                                    # Wait for injection response
-                                    injection_wait = random.uniform(8.0, 12.0)
-                                    time.sleep(injection_wait)
+                            # EOXS injection removed: do not send EOXS info if related terms are found
                             else:
                                 print("[NO MATCH] No relevant terms found")
                             

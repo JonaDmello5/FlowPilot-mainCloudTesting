@@ -18,6 +18,9 @@ def launch_chatgpt_browser(port=9222):
     browser_path = None
     if system == "Windows":
         possible_paths = [
+            r"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+            r"C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+            shutil.which("msedge.exe"),
             r"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
             r"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
             shutil.which("chrome.exe"),
@@ -25,6 +28,8 @@ def launch_chatgpt_browser(port=9222):
         ]
     else:
         possible_paths = [
+            "/usr/bin/microsoft-edge",
+            shutil.which("microsoft-edge"),
             "/usr/bin/google-chrome",
             "/usr/bin/google-chrome-stable",
             "/usr/lib/chromium-browser/chromium-browser",
