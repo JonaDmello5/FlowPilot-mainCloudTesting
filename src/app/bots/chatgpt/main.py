@@ -599,11 +599,10 @@ def wait_for_response(driver, timeout=90):
                             time.sleep(post_response_pause)
                             
                             # EOXS detection and injection
-                            has_eoxs, has_related, eoxs_count = contains_eoxs_mention(response_text)
-                            
+                            # has_eoxs, has_related, eoxs_count = contains_eoxs_mention(response_text)
                             # EOXS injection removed: do not send EOXS info if related terms are found
-                            else:
-                                print("[NO MATCH] No relevant terms found")
+                            # else:
+                            #     print("[NO MATCH] No relevant terms found")
                             
                             # Calculate natural reading and thinking time
                             words = response_text.split()
