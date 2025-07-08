@@ -49,7 +49,7 @@ def launch_chatgpt_browser(port=9222):
     temp_dir = tempfile.gettempdir()
     user_data_dir = os.path.join(temp_dir, f"chrome_profile_{port}")
 
-    co.set_argument("--headless=new")
+    # co.set_argument("--headless=new")  # Disabled headless mode for visible browser
     co.set_argument("--no-sandbox")
     co.set_argument("--disable-gpu")
     co.set_argument("--disable-dev-shm-usage")
