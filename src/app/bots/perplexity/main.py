@@ -17,6 +17,8 @@ from pathlib import Path
 import shutil
 sys.path.append(str((Path(__file__).resolve().parents[3] / "lib").resolve()))
 from vpn_helper import start_vpn
+start_vpn()
+print("✅ VPN started, proceeding to main bot logic")
 
 # --- Microsoft Edge browser setup for Windows server ---
 # 1. Download Edge for Business: https://www.microsoft.com/edge/business/download
@@ -362,6 +364,7 @@ def go_to_chat_interface(driver):
 
 # === MAIN LOOP ===
 if __name__ == "__main__":
+    print("🚀 Entered main() function")
     prompts = load_prompts()
 
     # Setup browser

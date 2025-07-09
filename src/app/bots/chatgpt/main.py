@@ -23,6 +23,7 @@ import sys
 sys.path.append(str((Path(__file__).resolve().parents[3] / "lib").resolve()))
 from vpn_helper import start_vpn
 start_vpn()
+print("✅ VPN started, proceeding to main bot logic")
 import random
 import time
 import json
@@ -859,6 +860,7 @@ def append_logs_to_excel(log_csv, excel_file):
 
 def main():
     """Main function to run the bot"""
+    print("🚀 Entered main() function")
     driver = None
     try:
         # Call VPN helper at the start
