@@ -16,35 +16,41 @@ def launch_chatgpt_browser(port=9222):
     co = ChromiumOptions()
     system = platform.system()
     browser_path = None
-    # Prioritize Chrome over Edge in possible_paths
-    if system == "Windows":
-        possible_paths = [
-            r"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-            r"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-            shutil.which("chrome.exe"),
-            shutil.which("chromium.exe"),
-            r"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-            r"C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
-            shutil.which("msedge.exe"),
-        ]
+    # First, check DP_BROWSER_PATH environment variable
+    env_browser_path = os.environ.get("DP_BROWSER_PATH")
+    if env_browser_path and os.path.exists(env_browser_path):
+        browser_path = env_browser_path
+        co.set_browser_path(env_browser_path)
     else:
-        possible_paths = [
-            "/usr/bin/google-chrome",
-            "/usr/bin/google-chrome-stable",
-            shutil.which("google-chrome"),
-            "/usr/lib/chromium-browser/chromium-browser",
-            "/usr/bin/chromium-browser",
-            shutil.which("chromium-browser"),
-            "/usr/bin/microsoft-edge",
-            shutil.which("microsoft-edge"),
-        ]
-    for _path in possible_paths:
-        if _path and os.path.exists(_path):
-            browser_path = _path
-            co.set_browser_path(_path)
-            break
+        # Prioritize Chrome over Edge in possible_paths
+        if system == "Windows":
+            possible_paths = [
+                r"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+                r"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+                shutil.which("chrome.exe"),
+                shutil.which("chromium.exe"),
+                r"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+                r"C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+                shutil.which("msedge.exe"),
+            ]
+        else:
+            possible_paths = [
+                "/usr/bin/google-chrome",
+                "/usr/bin/google-chrome-stable",
+                shutil.which("google-chrome"),
+                "/usr/lib/chromium-browser/chromium-browser",
+                "/usr/bin/chromium-browser",
+                shutil.which("chromium-browser"),
+                "/usr/bin/microsoft-edge",
+                shutil.which("microsoft-edge"),
+            ]
+        for _path in possible_paths:
+            if _path and os.path.exists(_path):
+                browser_path = _path
+                co.set_browser_path(_path)
+                break
     if not browser_path:
-        raise RuntimeError(f"No Chrome/Chromium binary found. Tried: {possible_paths}")
+        raise RuntimeError(f"No Chrome/Chromium binary found. Tried: {[env_browser_path] + possible_paths}")
 
     # Use cross-platform temp directory for user data dir
     temp_dir = tempfile.gettempdir()
