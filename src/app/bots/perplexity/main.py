@@ -362,42 +362,77 @@ def go_to_chat_interface(driver):
         print(f"⚠️ Could not save screenshot: {e}")
     return False
 
-# === MAIN LOOP ===
-if __name__ == "__main__":
+def main():
     print("🚀 Entered main() function")
-    prompts = load_prompts()
-
-    # Setup browser
-    from DrissionPage import ChromiumOptions, ChromiumPage
-
-    # ---------- DrissionPage headless config ----------
-    co = ChromiumOptions()
-    co.set_browser_path(os.environ["DP_BROWSER_PATH"])
-
-    # headless / server-safe flags
-    # co.set_argument("--headless=new")
-    co.set_argument("--no-sandbox")
-    co.set_argument("--disable-dev-shm-usage")
-    co.set_argument("--remote-debugging-port=9222")
-    co.set_argument("--disable-gpu")
-    co.set_argument("--disable-software-rasterizer")
-    co.set_argument("--no-startup-window")
-
-    driver = ChromiumPage(co)
-    # ---------- end DrissionPage config  ----------
-
+    driver = None
     try:
-        if not go_to_chat_interface(driver):
-            print("❌ Could not navigate to chat interface. Exiting.")
-            sys.exit(1)
+        start_vpn()
+        print("✅ VPN started, proceeding to main bot logic")
 
-        run_perplexity_flow(driver, prompts, PLATFORM_URL, LOG_FILE, EOXS_PARAGRAPH, lambda: True, log_session)
-    except KeyboardInterrupt:
-        print("\n⚠️ Script stopped by user")
+        # Load all prompt sets
+        prompt_sets = {}
+        base_path = os.path.join(os.path.dirname(__file__), "prompts")
+        for set_name, file_name in {
+            'p1': 'p1.json',
+            'p2': 'p2.json',
+            'p3': 'p3.json',
+            'p4': 'p4.json',
+            'p5': 'p5.json',
+            'r1': 'r1.json',
+            'r2': 'r2.json',
+            'r3': 'r3.json',
+            'r4': 'r4.json',
+        }.items():
+            file_path = os.path.join(base_path, file_name)
+            prompt_sets[set_name] = load_prompts() # Changed to load_prompts()
+            if not prompt_sets[set_name]:
+                print(f"❌ Failed to load prompts from {set_name}. Exiting...")
+                return
+        print("✅ Prompt sets loaded, proceeding to browser launch")
+
+        # Setup browser
+        from DrissionPage import ChromiumOptions, ChromiumPage
+
+        # ---------- DrissionPage headless config ----------
+        co = ChromiumOptions()
+        co.set_browser_path(os.environ["DP_BROWSER_PATH"])
+
+        # headless / server-safe flags
+        # co.set_argument("--headless=new")
+        co.set_argument("--no-sandbox")
+        co.set_argument("--disable-dev-shm-usage")
+        co.set_argument("--remote-debugging-port=9222")
+        co.set_argument("--disable-gpu")
+        co.set_argument("--disable-software-rasterizer")
+        co.set_argument("--no-startup-window")
+
+        driver = ChromiumPage(co)
+        print("✅ Browser launched, proceeding to Perplexity navigation")
+
+        try:
+            if not go_to_chat_interface(driver):
+                print("❌ Could not navigate to chat interface. Exiting.")
+                sys.exit(1)
+
+            run_perplexity_flow(driver, prompt_sets, PLATFORM_URL, LOG_FILE, EOXS_PARAGRAPH, lambda: True, log_session)
+        except KeyboardInterrupt:
+            print("\n⚠️ Script stopped by user")
+        except Exception as e:
+            print(f"❌ Error during bot execution: {e}")
+            import traceback
+            traceback.print_exc()
+            return
     except Exception as e:
         print(f"❌ Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        return
     finally:
-        print("🔚 Closing browser...")
-        driver.quit()
-        # Append logs to a single Excel file at the end
-        append_logs_to_excel(LOG_FILE, os.path.join(BOT_DIR, 'logs', 'logs.xlsx'))
+        if driver:
+            print("🔚 Closing browser...")
+            driver.quit()
+            # Append logs to a single Excel file at the end
+            append_logs_to_excel(LOG_FILE, os.path.join(BOT_DIR, 'logs', 'logs.xlsx'))
+
+if __name__ == "__main__":
+    main()
