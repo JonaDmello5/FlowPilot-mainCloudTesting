@@ -1,3 +1,23 @@
+import os
+import subprocess
+import time
+import psutil
+
+def start_xvfb():
+    if not os.environ.get("DISPLAY"):
+        xvfb_running = any("Xvfb" in (p.name() or "") for p in psutil.process_iter())
+        if not xvfb_running:
+            print("🔵 Starting Xvfb virtual display...")
+            xvfb_cmd = ["Xvfb", ":99", "-screen", "0", "1280x1024x24"]
+            proc = subprocess.Popen(xvfb_cmd)
+            time.sleep(2)
+        else:
+            print("🟢 Xvfb is already running.")
+        os.environ["DISPLAY"] = ":99"
+    else:
+        print(f"🟢 DISPLAY already set to {os.environ['DISPLAY']}")
+
+start_xvfb()
 from pathlib import Path
 import sys
 sys.path.append(str((Path(__file__).resolve().parents[3] / "lib").resolve()))
