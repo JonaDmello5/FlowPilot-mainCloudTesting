@@ -314,6 +314,26 @@ def append_logs_to_excel(log_csv, excel_file):
     df.to_excel(excel_file, index=False)
     print(f"📝 Logs written to {excel_file}")
 
+def go_to_chat_interface(driver):
+    # Only attempt to find the chat input box, do not interact with login/signup
+    print("[NAV] Navigating to https://www.perplexity.ai and looking for chat input...")
+    driver.get("https://www.perplexity.ai")
+    for i in range(30):
+        try:
+            input_box = driver.ele("tag:textarea")
+            if input_box:
+                print("✅ Chat input found!")
+                return True
+        except Exception:
+            pass
+        time.sleep(1)
+    try:
+        driver.screenshot('debug_no_input.png')
+        print("❌ Chat input not found. Screenshot saved as debug_no_input.png")
+    except Exception as e:
+        print(f"⚠️ Could not save screenshot: {e}")
+    return False
+
 # === MAIN LOOP ===
 if __name__ == "__main__":
     prompts = load_prompts()
@@ -338,6 +358,10 @@ if __name__ == "__main__":
     # ---------- end DrissionPage config  ----------
 
     try:
+        if not go_to_chat_interface(driver):
+            print("❌ Could not navigate to chat interface. Exiting.")
+            sys.exit(1)
+
         run_perplexity_flow(driver, prompts, PLATFORM_URL, LOG_FILE, EOXS_PARAGRAPH, lambda: True, log_session)
     except KeyboardInterrupt:
         print("\n⚠️ Script stopped by user")

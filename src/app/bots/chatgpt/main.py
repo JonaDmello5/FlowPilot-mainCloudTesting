@@ -809,22 +809,23 @@ def handle_stay_logged_out(page):
         print(f'⚠️ Could not click "Stay logged out": {e}')
 
 def go_to_chat_interface(driver):
-    # Try to find and click the "Try ChatGPT" or similar button
+    # Only attempt to find the chat input box, do not interact with login/signup
+    print("[NAV] Navigating to https://chatgpt.com/ and looking for chat input...")
+    driver.get("https://chatgpt.com/")
+    for i in range(30):
+        try:
+            input_box = driver.ele("tag:textarea")
+            if input_box:
+                print("✅ Chat input found!")
+                return True
+        except Exception:
+            pass
+        time.sleep(1)
     try:
-        button_texts = ["Try ChatGPT", "Start chatting", "Chat now", "Get started"]
-        for text in button_texts:
-            try:
-                btn = driver.ele(f'text:{text}')
-                if btn:
-                    btn.click()
-                    print(f"✅ Clicked button: {text}")
-                    time.sleep(2)
-                    return True
-            except Exception:
-                continue
-        print("ℹ️ No landing page button found, proceeding as normal.")
+        driver.screenshot('debug_no_input.png')
+        print("❌ Chat input not found. Screenshot saved as debug_no_input.png")
     except Exception as e:
-        print(f"⚠️ Could not click landing page button: {e}")
+        print(f"⚠️ Could not save screenshot: {e}")
     return False
 
 # --- Update append_logs_to_excel to always include all columns ---
