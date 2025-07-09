@@ -859,12 +859,10 @@ def append_logs_to_excel(log_csv, excel_file):
     print(f"📝 Logs written to {excel_file}")
 
 def main():
-    """Main function to run the bot"""
     print("🚀 Entered main() function")
     driver = None
     try:
-        # Call VPN helper at the start
-        start_vpn()  # will raise if it really cannot get an IP
+        start_vpn()
         print("✅ VPN started, proceeding to main bot logic")
 
         # Load all prompt sets
@@ -888,34 +886,24 @@ def main():
                 return
         print("✅ Prompt sets loaded, proceeding to browser launch")
 
-        # Launch Chrome manually with --remote-debugging-port=9222
-        # Always use port 9222 for remote debugging to avoid conflicts
         driver = launch_chatgpt_browser(port=9222)
         print("✅ Browser launched, proceeding to ChatGPT navigation")
 
         try:
-            # Open ChatGPT
+            # Open ChatGPT and run the main flow
             print("🌐 Opening ChatGPT...")
             driver.get(PLATFORM_URL)
             go_to_chat_interface(driver)
             handle_stay_logged_out(driver)
-
-            # Wait for ChatGPT to be ready
             if not wait_for_page_ready(driver, max_wait=90):
                 print("❌ Could not access ChatGPT. Please check manually.")
                 return
-
-            # Debug: Show what elements are available
             debug_page_elements(driver)
-
             print("🚀 Starting automatic prompt sending...")
-
             prompt_count = 0
             max_prompts = 100
             failed_attempts = 0
             max_failures = 3
-
-            # --- Update ask_and_check to pass all columns ---
             def ask_and_check(prompt_set_name):
                 prompt_data = get_random_prompt(prompt_sets[prompt_set_name])
                 if not prompt_data:
@@ -930,7 +918,6 @@ def main():
                 response = wait_for_response(driver, timeout=90)
                 has_eoxs, has_related, eoxs_count = contains_eoxs_mention(response)
                 eoxs_detected = has_eoxs or has_related
-                # Get prompt run counts
                 try:
                     with open(PROMPT_RUN_COUNT_FILE, 'r') as f:
                         prompt_data_counts = json.load(f)
@@ -943,19 +930,14 @@ def main():
                 counts = prompt_data_counts.get(prompt_text_str, {"successful_uses": None, "total_attempts": None})
                 log_session(PLATFORM_URL, prompt_text, response, prompt_set_name, eoxs_detected, prompt_category, eoxs_count, counts.get("successful_uses"), counts.get("total_attempts"))
                 return eoxs_detected, prompt_text, response
-
-            # Main flow
             while prompt_count < max_prompts and failed_attempts < max_failures:
                 wait_for_generation_complete(driver, max_wait=45)
-
-                # --- Start with p1 ---
                 eoxs, _, _ = ask_and_check('p1')
                 prompt_count += 1
                 if eoxs is None:
                     failed_attempts += 1
                     continue
                 if eoxs:
-                    # Main loop: p2 → p3 → p4 → p5
                     while True:
                         for set_name in ['p2', 'p3', 'p4', 'p5']:
                             eoxs, _, _ = ask_and_check(set_name)
@@ -966,17 +948,15 @@ def main():
                             if set_name == 'p5':
                                 if eoxs:
                                     print("✅ EOXS detected in p5, looping back to p2...")
-                                    # Continue the loop (p2 → p3 → p4 → p5 ...)
                                     continue
                                 else:
                                     print("🔄 EOXS not detected in p5, restarting from p1...")
-                                    break  # Restart from p1
+                                    break
                         else:
-                            continue  # Only reached if not broken, so continue main loop
-                        break  # If p5(no), break inner loop to restart from p1
-                    continue  # Restart from p1
+                            continue
+                        break
+                    continue
                 else:
-                    # Recovery loop: cycle through r1, r2, r3, r4 until EOXS detected
                     recovery_sets = ['r1', 'r2', 'r3', 'r4']
                     recovery_index = 0
                     while True:
@@ -988,7 +968,6 @@ def main():
                             break
                         if eoxs:
                             print(f"✅ EOXS detected in {r_set}, jumping to main loop (p2 → p3 → p4 → p5)...")
-                            # Main loop: p2 → p3 → p4 → p5
                             while True:
                                 for set_name in ['p2', 'p3', 'p4', 'p5']:
                                     eoxs, _, _ = ask_and_check(set_name)
@@ -1006,18 +985,14 @@ def main():
                                 else:
                                     continue
                                 break
-                            break  # Exit recovery loop
+                            break
                         recovery_index += 1
-                    continue  # Restart from p1
-
+                    continue
             if failed_attempts >= max_failures:
                 print(f"⚠️ Stopped after {prompt_count} prompts due to failures")
             else:
                 print(f"\n🎉 Successfully completed the prompt flow with {prompt_count} prompts!")
-
-            # After all interactions are done, convert logs to Excel
             convert_logs_to_excel()
-            
         except Exception as e:
             print(f"❌ Error during bot execution: {e}")
             import traceback
