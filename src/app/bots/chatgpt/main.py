@@ -112,79 +112,28 @@ def get_random_prompt(prompts):
         return None
     return random.choice(prompts)
 
-def log_session(platform, prompt, response, prompt_set, eoxs_detected):
-    """Log session details to CSV file with essential metrics"""
-    # Get EOXS count
-    _, _, eoxs_count = contains_eoxs_mention(response)
-    
-    # Create or load prompt run count and attempt count
+# --- Update log_session to include all columns ---
+def log_session(platform, prompt, response, prompt_set, eoxs_detected, prompt_category=None, eoxs_count=None, successful_uses=None, total_attempts=None):
+    log_entry = {
+        "platform": platform,
+        "prompt": prompt,
+        "response": response,
+        "timestamp": datetime.now().isoformat(),
+        "prompt_category": prompt_category if prompt_category else prompt_set,
+        "eoxs_detected": eoxs_detected,
+        "eoxs_count": eoxs_count,
+        "successful_uses": successful_uses,
+        "total_attempts": total_attempts
+    }
     try:
-        # Ensure logs directory exists
-        os.makedirs(os.path.dirname(PROMPT_RUN_COUNT_FILE), exist_ok=True)
-        
-        try:
-            with open(PROMPT_RUN_COUNT_FILE, 'r') as f:
-                prompt_data = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            prompt_data = {}
-    except Exception as e:
-        print(f"⚠️ Error loading prompt run count: {e}")
-        prompt_data = {}
-    
-    # Handle prompt text - it could be a string or a dictionary
-    if isinstance(prompt, dict):
-        prompt_text = prompt.get("prompt", "")
-    else:
-        prompt_text = str(prompt)
-    
-    # Initialize or update prompt data
-    if prompt_text not in prompt_data:
-        prompt_data[prompt_text] = {
-            "successful_uses": 0,
-            "total_attempts": 0
-        }
-    
-    # Update counts
-    prompt_data[prompt_text]["total_attempts"] += 1
-    if response:  # Only count as successful if we got a response
-        prompt_data[prompt_text]["successful_uses"] += 1
-    
-    # Save updated counts
-    try:
-        with open(PROMPT_RUN_COUNT_FILE, 'w') as f:
-            json.dump(prompt_data, f)
-    except Exception as e:
-        print(f"⚠️ Error saving prompt run count: {e}")
-    
-    try:
-        # Ensure logs directory exists
         os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
-        
         try:
             df = pd.read_csv(LOG_FILE)
         except (FileNotFoundError, pd.errors.EmptyDataError):
             df = pd.DataFrame()
-    
-        # Create log entry with essential metrics
-        log_entry = {
-            "prompt": prompt_text,
-            "eoxs_count": eoxs_count,
-            "successful_uses": prompt_data[prompt_text]["successful_uses"],
-            "total_attempts": prompt_data[prompt_text]["total_attempts"],
-            "timestamp": datetime.now().isoformat()
-        }
-        
         df = pd.concat([df, pd.DataFrame([log_entry])], ignore_index=True)
         df.to_csv(LOG_FILE, index=False)
         print(f"📝 Logged session to {LOG_FILE}")
-        
-        # Print current session summary
-        print("\n📊 Current Session Summary:")
-        print(f"Prompt: {prompt_text[:50]}...")
-        print(f"EOXS Count in Response: {eoxs_count}")
-        print(f"Successful Uses: {prompt_data[prompt_text]['successful_uses']}")
-        print(f"Total Attempts: {prompt_data[prompt_text]['total_attempts']}")
-        
     except Exception as e:
         print(f"⚠️ Error logging session: {e}")
 
@@ -878,17 +827,18 @@ def go_to_chat_interface(driver):
         print(f"⚠️ Could not click landing page button: {e}")
     return False
 
+# --- Update append_logs_to_excel to always include all columns ---
 def append_logs_to_excel(log_csv, excel_file):
-    # Read the CSV log
+    all_columns = ["platform", "prompt", "response", "timestamp", "prompt_category", "eoxs_detected", "eoxs_count", "successful_uses", "total_attempts"]
     if not os.path.exists(log_csv):
         print(f"⚠️ Log CSV {log_csv} does not exist.")
         return
     df = pd.read_csv(log_csv)
-    # If the Excel file exists, append to it
+    df = df.reindex(columns=all_columns)
     if os.path.exists(excel_file):
         existing = pd.read_excel(excel_file)
+        existing = existing.reindex(columns=all_columns)
         df = pd.concat([existing, df], ignore_index=True)
-    # Write to the Excel file (overwrite)
     df.to_excel(excel_file, index=False)
     print(f"📝 Logs written to {excel_file}")
 
@@ -946,20 +896,33 @@ def main():
             failed_attempts = 0
             max_failures = 3
 
+            # --- Update ask_and_check to pass all columns ---
             def ask_and_check(prompt_set_name):
                 prompt_data = get_random_prompt(prompt_sets[prompt_set_name])
                 if not prompt_data:
                     print(f"❌ No prompts available in {prompt_set_name} set")
                     return None, None, None
                 prompt_text = prompt_data["prompt"]
-                print(f"\n[PROMPT {prompt_count + 1}/{max_prompts}] Set: {prompt_set_name} | Category: {prompt_data['category']} | Persona: {prompt_data['persona']}")
+                prompt_category = prompt_data.get("category", prompt_set_name)
+                print(f"\n[PROMPT {prompt_count + 1}/{max_prompts}] Set: {prompt_set_name} | Category: {prompt_category} | Persona: {prompt_data['persona']}")
                 if not find_and_type(driver, prompt_text):
                     print("❌ Prompt input failed, skipping session.")
                     return None, None, None
                 response = wait_for_response(driver, timeout=90)
                 has_eoxs, has_related, eoxs_count = contains_eoxs_mention(response)
                 eoxs_detected = has_eoxs or has_related
-                log_session(PLATFORM_URL, prompt_text, response, prompt_set_name, eoxs_detected)
+                # Get prompt run counts
+                try:
+                    with open(PROMPT_RUN_COUNT_FILE, 'r') as f:
+                        prompt_data_counts = json.load(f)
+                except (FileNotFoundError, json.JSONDecodeError):
+                    prompt_data_counts = {}
+                if isinstance(prompt_text, dict):
+                    prompt_text_str = prompt_text.get("prompt", "")
+                else:
+                    prompt_text_str = str(prompt_text)
+                counts = prompt_data_counts.get(prompt_text_str, {"successful_uses": None, "total_attempts": None})
+                log_session(PLATFORM_URL, prompt_text, response, prompt_set_name, eoxs_detected, prompt_category, eoxs_count, counts.get("successful_uses"), counts.get("total_attempts"))
                 return eoxs_detected, prompt_text, response
 
             # Main flow

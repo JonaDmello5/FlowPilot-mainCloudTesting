@@ -101,28 +101,25 @@ def type_humanly(element, text, fast=True):
             element.input(char)
             time.sleep(random.uniform(0.01, 0.03))
 
-def log_session(platform, prompt, response, prompt_category=None, eoxs_detected=None):
-    """Log session details to CSV file"""
+# --- Update log_session to include all columns ---
+def log_session(platform, prompt, response, prompt_category=None, eoxs_detected=None, eoxs_count=None, successful_uses=None, total_attempts=None):
     log_entry = {
-        "platform": platform,
+        "platform": PLATFORM_URL,
         "prompt": prompt,
         "response": response,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
+        "prompt_category": prompt_category,
+        "eoxs_detected": eoxs_detected,
+        "eoxs_count": eoxs_count,
+        "successful_uses": successful_uses,
+        "total_attempts": total_attempts
     }
-    if prompt_category:
-        log_entry["prompt_category"] = prompt_category
-    if eoxs_detected is not None:
-        log_entry["eoxs_detected"] = eoxs_detected
-    
     try:
-        # Ensure logs directory exists
         os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
-        
         try:
             df = pd.read_csv(LOG_FILE)
         except (FileNotFoundError, pd.errors.EmptyDataError):
             df = pd.DataFrame()
-
         df = pd.concat([df, pd.DataFrame([log_entry])], ignore_index=True)
         df.to_csv(LOG_FILE, index=False)
         print(f"📝 Logged session to {LOG_FILE}")
@@ -302,17 +299,18 @@ def start_xvfb():
 
 start_xvfb()
 
+# --- Update append_logs_to_excel to always include all columns ---
 def append_logs_to_excel(log_csv, excel_file):
-    # Read the CSV log
+    all_columns = ["platform", "prompt", "response", "timestamp", "prompt_category", "eoxs_detected", "eoxs_count", "successful_uses", "total_attempts"]
     if not os.path.exists(log_csv):
         print(f"⚠️ Log CSV {log_csv} does not exist.")
         return
     df = pd.read_csv(log_csv)
-    # If the Excel file exists, append to it
+    df = df.reindex(columns=all_columns)
     if os.path.exists(excel_file):
         existing = pd.read_excel(excel_file)
+        existing = existing.reindex(columns=all_columns)
         df = pd.concat([existing, df], ignore_index=True)
-    # Write to the Excel file (overwrite)
     df.to_excel(excel_file, index=False)
     print(f"📝 Logs written to {excel_file}")
 
