@@ -799,35 +799,45 @@ def convert_logs_to_excel():
 def handle_stay_logged_out(driver, timeout=8):
     """Click 'Stay logged out' if the popup appears within timeout seconds."""
     print("🔍 Checking for 'Stay logged out' popup...")
-    for _ in range(timeout * 2):  # check every 0.5s
+    for i in range(timeout * 2):  # check every 0.5s
         try:
             btn = driver.ele('text:Stay logged out')
             if btn:
-                btn.click()
-                print('✅ Clicked "Stay logged out" to dismiss login popup.')
-                return True
-        except Exception:
-            pass
+                try:
+                    btn.click()
+                    print(f'✅ Clicked "Stay logged out" to dismiss login popup at attempt {i+1}.')
+                    return True
+                except Exception as click_err:
+                    print(f'⚠️ Error clicking "Stay logged out" at attempt {i+1}: {click_err}')
+        except Exception as find_err:
+            print(f'⚠️ Error finding "Stay logged out" at attempt {i+1}: {find_err}')
         time.sleep(0.5)
-    print('ℹ️ "Stay logged out" not found, proceeding as normal.')
+    print('ℹ️ "Stay logged out" not found after waiting, proceeding as normal.')
     return False
 
 def go_to_chat_interface(driver):
     print("[NAV] Navigating to https://chatgpt.com/ and looking for chat input...")
-    driver.get("https://chatgpt.com/")
+    try:
+        driver.get("https://chatgpt.com/")
+        print("[NAV] Page loaded, checking for 'Stay logged out' popup...")
+    except Exception as nav_err:
+        print(f"❌ Error navigating to https://chatgpt.com/: {nav_err}")
+        return False
     handle_stay_logged_out(driver)  # Try to click the popup if it appears
     for i in range(30):
         try:
             input_box = driver.ele("tag:textarea")
             if input_box:
-                print("✅ Chat input found!")
+                print(f"✅ Chat input found at attempt {i+1}!")
                 return True
-        except Exception:
-            pass
+            else:
+                print(f"⏳ Attempt {i+1}: Chat input not found yet.")
+        except Exception as input_err:
+            print(f"⚠️ Error finding chat input at attempt {i+1}: {input_err}")
         time.sleep(1)
     try:
         driver.screenshot('debug_no_input.png')
-        print("❌ Chat input not found. Screenshot saved as debug_no_input.png")
+        print("❌ Chat input not found after 30 attempts. Screenshot saved as debug_no_input.png")
     except Exception as e:
         print(f"⚠️ Could not save screenshot: {e}")
     return False
