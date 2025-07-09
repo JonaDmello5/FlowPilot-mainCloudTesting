@@ -865,11 +865,11 @@ def main():
     try:
         # Call VPN helper at the start
         start_vpn()  # will raise if it really cannot get an IP
+        print("✅ VPN started, proceeding to main bot logic")
 
         # Load all prompt sets
         prompt_sets = {}
         base_path = os.path.join(os.path.dirname(__file__), "prompts")
-        
         for set_name, file_name in {
             'p1': 'p1.json',
             'p2': 'p2.json',
@@ -886,10 +886,12 @@ def main():
             if not prompt_sets[set_name]:
                 print(f"❌ Failed to load prompts from {set_name}. Exiting...")
                 return
+        print("✅ Prompt sets loaded, proceeding to browser launch")
 
         # Launch Chrome manually with --remote-debugging-port=9222
         # Always use port 9222 for remote debugging to avoid conflicts
         driver = launch_chatgpt_browser(port=9222)
+        print("✅ Browser launched, proceeding to ChatGPT navigation")
 
         try:
             # Open ChatGPT
@@ -1018,10 +1020,13 @@ def main():
             
         except Exception as e:
             print(f"❌ Error during bot execution: {e}")
+            import traceback
+            traceback.print_exc()
             return
-
     except Exception as e:
         print(f"❌ Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
         return
     finally:
         if driver:
