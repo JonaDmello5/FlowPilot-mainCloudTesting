@@ -796,22 +796,26 @@ def convert_logs_to_excel():
     except Exception as e:
         print(f"⚠️ Error creating Excel log file: {e}")
 
-def handle_stay_logged_out(page):
-    sleep(2)  # Wait for popup to appear
-    try:
-        stay_logged_out = page.ele('text:Stay logged out')
-        if stay_logged_out:
-            stay_logged_out.click()
-            print('✅ Clicked "Stay logged out" to dismiss login popup.')
-        else:
-            print('ℹ️ "Stay logged out" not found, proceeding as normal.')
-    except Exception as e:
-        print(f'⚠️ Could not click "Stay logged out": {e}')
+def handle_stay_logged_out(driver, timeout=8):
+    """Click 'Stay logged out' if the popup appears within timeout seconds."""
+    print("🔍 Checking for 'Stay logged out' popup...")
+    for _ in range(timeout * 2):  # check every 0.5s
+        try:
+            btn = driver.ele('text:Stay logged out')
+            if btn:
+                btn.click()
+                print('✅ Clicked "Stay logged out" to dismiss login popup.')
+                return True
+        except Exception:
+            pass
+        time.sleep(0.5)
+    print('ℹ️ "Stay logged out" not found, proceeding as normal.')
+    return False
 
 def go_to_chat_interface(driver):
-    # Only attempt to find the chat input box, do not interact with login/signup
     print("[NAV] Navigating to https://chatgpt.com/ and looking for chat input...")
     driver.get("https://chatgpt.com/")
+    handle_stay_logged_out(driver)  # Try to click the popup if it appears
     for i in range(30):
         try:
             input_box = driver.ele("tag:textarea")
