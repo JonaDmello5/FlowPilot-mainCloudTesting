@@ -405,6 +405,11 @@ def find_and_type(driver, prompt_text):
         
         if not input_box:
             print("❌ No input element found with any selector")
+            try:
+                driver.screenshot('debug_no_input.png')
+                print("📸 Screenshot saved as debug_no_input.png")
+            except Exception as e:
+                print(f"⚠️ Could not save screenshot: {e}")
             print("🔍 Running debug analysis...")
             debug_page_elements(driver)
             return False
@@ -854,6 +859,39 @@ def handle_stay_logged_out(page):
     except Exception as e:
         print(f'⚠️ Could not click "Stay logged out": {e}')
 
+def go_to_chat_interface(driver):
+    # Try to find and click the "Try ChatGPT" or similar button
+    try:
+        button_texts = ["Try ChatGPT", "Start chatting", "Chat now", "Get started"]
+        for text in button_texts:
+            try:
+                btn = driver.ele(f'text:{text}')
+                if btn:
+                    btn.click()
+                    print(f"✅ Clicked button: {text}")
+                    time.sleep(2)
+                    return True
+            except Exception:
+                continue
+        print("ℹ️ No landing page button found, proceeding as normal.")
+    except Exception as e:
+        print(f"⚠️ Could not click landing page button: {e}")
+    return False
+
+def append_logs_to_excel(log_csv, excel_file):
+    # Read the CSV log
+    if not os.path.exists(log_csv):
+        print(f"⚠️ Log CSV {log_csv} does not exist.")
+        return
+    df = pd.read_csv(log_csv)
+    # If the Excel file exists, append to it
+    if os.path.exists(excel_file):
+        existing = pd.read_excel(excel_file)
+        df = pd.concat([existing, df], ignore_index=True)
+    # Write to the Excel file (overwrite)
+    df.to_excel(excel_file, index=False)
+    print(f"📝 Logs written to {excel_file}")
+
 def main():
     """Main function to run the bot"""
     driver = None
@@ -890,6 +928,7 @@ def main():
             # Open ChatGPT
             print("🌐 Opening ChatGPT...")
             driver.get(PLATFORM_URL)
+            go_to_chat_interface(driver)
             handle_stay_logged_out(driver)
 
             # Wait for ChatGPT to be ready

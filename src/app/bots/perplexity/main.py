@@ -286,6 +286,36 @@ def wait_for_response(driver, timeout=90):
         print(f"❌ Error waiting for response: {e}")
         return "Error getting response"
 
+def start_xvfb():
+    if not os.environ.get("DISPLAY"):
+        xvfb_running = any("Xvfb" in (p.name() or "") for p in psutil.process_iter())
+        if not xvfb_running:
+            print("🔵 Starting Xvfb virtual display...")
+            xvfb_cmd = ["Xvfb", ":99", "-screen", "0", "1280x1024x24"]
+            proc = subprocess.Popen(xvfb_cmd)
+            time.sleep(2)
+        else:
+            print("🟢 Xvfb is already running.")
+        os.environ["DISPLAY"] = ":99"
+    else:
+        print(f"🟢 DISPLAY already set to {os.environ['DISPLAY']}")
+
+start_xvfb()
+
+def append_logs_to_excel(log_csv, excel_file):
+    # Read the CSV log
+    if not os.path.exists(log_csv):
+        print(f"⚠️ Log CSV {log_csv} does not exist.")
+        return
+    df = pd.read_csv(log_csv)
+    # If the Excel file exists, append to it
+    if os.path.exists(excel_file):
+        existing = pd.read_excel(excel_file)
+        df = pd.concat([existing, df], ignore_index=True)
+    # Write to the Excel file (overwrite)
+    df.to_excel(excel_file, index=False)
+    print(f"📝 Logs written to {excel_file}")
+
 # === MAIN LOOP ===
 if __name__ == "__main__":
     prompts = load_prompts()
@@ -318,3 +348,5 @@ if __name__ == "__main__":
     finally:
         print("🔚 Closing browser...")
         driver.quit()
+        # Append logs to a single Excel file at the end
+        append_logs_to_excel(LOG_FILE, os.path.join(BOT_DIR, 'logs', 'logs.xlsx'))

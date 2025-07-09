@@ -47,6 +47,25 @@ def wait_for_page_ready(driver, max_wait=60):
     print("❌ Page did not become ready within timeout")
     return False
 
+def go_to_chat_interface(driver):
+    # Try to find and click the "Try Perplexity" or similar button
+    try:
+        button_texts = ["Try Perplexity", "Start chatting", "Chat now", "Get started"]
+        for text in button_texts:
+            try:
+                btn = driver.ele(f'text:{text}')
+                if btn:
+                    btn.click()
+                    print(f"✅ Clicked button: {text}")
+                    time.sleep(2)
+                    return True
+            except Exception:
+                continue
+        print("ℹ️ No landing page button found, proceeding as normal.")
+    except Exception as e:
+        print(f"⚠️ Could not click landing page button: {e}")
+    return False
+
 def find_and_type(driver, prompt_text):
     try:
         print(f"📝 Typing prompt: {prompt_text[:50]}...")
@@ -55,6 +74,7 @@ def find_and_type(driver, prompt_text):
         input_box = None
         for attempt in range(5):
             try:
+                # Update this selector if Perplexity changes its UI
                 input_box = driver.ele("tag:textarea")
                 if input_box:
                     break
@@ -65,6 +85,11 @@ def find_and_type(driver, prompt_text):
         
         if not input_box:
             print("❌ No text area found")
+            try:
+                driver.screenshot('debug_no_input.png')
+                print("📸 Screenshot saved as debug_no_input.png")
+            except Exception as e:
+                print(f"⚠️ Could not save screenshot: {e}")
             return False
         
         # Click on the text area first to focus
@@ -196,6 +221,7 @@ def ask_and_check_perplexity(driver, prompt_set_name, prompts_by_category, promp
 def run_perplexity_flow(driver, prompts_by_category, platform_url, log_file, eoxs_paragraph, vpn_verify_func, log_session_func):
     print("🌐 Opening Perplexity...")
     driver.get(platform_url)
+    go_to_chat_interface(driver)
 
     if not wait_for_page_ready(driver, max_wait=90):
         print("❌ Could not access Perplexity. Please check manually.")
