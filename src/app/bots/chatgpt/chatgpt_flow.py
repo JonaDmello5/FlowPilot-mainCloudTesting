@@ -14,9 +14,8 @@ def free_port(start=9222):
         s.bind(('', 0))
         return s.getsockname()[1]
 
-def launch_chatgpt_browser(port=None):
-    if port is None:
-        port = free_port()
+def launch_chatgpt_browser():
+    port = 9222
     print(f"DEBUG: Using port {port} for Chromium remote debugging")
     browser_path = "/snap/bin/chromium"
     print(f"DEBUG: Checking Chromium path at {browser_path}")
