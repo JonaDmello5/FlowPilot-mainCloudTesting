@@ -884,7 +884,7 @@ def main():
         # Launch browser
         try:
             print("[STEP] Launching browser...")
-            driver = launch_chatgpt_browser(port=DEBUG_PORT)
+            driver = launch_chatgpt_browser()
             print("[OK] Browser launched, proceeding to ChatGPT navigation")
         except Exception as e:
             print(f"[ERROR] Error during browser launch: {e}")
