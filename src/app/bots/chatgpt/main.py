@@ -21,9 +21,9 @@ start_xvfb()
 from pathlib import Path
 import sys
 sys.path.append(str((Path(__file__).resolve().parents[3] / "lib").resolve()))
-from vpn_helper import start_vpn
-start_vpn()
-print("✅ VPN started, proceeding to main bot logic")
+# from vpn_helper import start_vpn
+# start_vpn()
+# print("✅ VPN started, proceeding to main bot logic")
 import random
 import time
 import json
@@ -872,7 +872,7 @@ def main():
     try:
         try:
             print("[STEP] Starting VPN...")
-            start_vpn()
+            # start_vpn() # Removed as per edit hint
             print("[OK] VPN started, proceeding to main bot logic")
         except Exception as e:
             print(f"[ERROR] Error during VPN startup: {e}")
