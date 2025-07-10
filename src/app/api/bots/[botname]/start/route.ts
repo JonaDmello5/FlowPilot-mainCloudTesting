@@ -1,10 +1,13 @@
 // src/app/api/bots/[botName]/start/route.ts
 
+// If you see type errors for Node.js modules, ensure you have @types/node installed:
+// npm i --save-dev @types/node
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { spawn, ChildProcess } from 'child_process';
 import path from 'path';
 import fs from 'fs';
+import { Buffer } from 'buffer'; // Add this for Buffer type
 
 export async function POST(
   req: NextRequest,
@@ -43,7 +46,8 @@ export async function POST(
     }
 
     // Spawn the bot process
-    const pythonProcess: ChildProcess = spawn('python', [scriptPath], {
+    // Use '-u' for unbuffered output so logs appear immediately in pm2 logs
+    const pythonProcess: ChildProcess = spawn('python', ['-u', scriptPath], {
       stdio: 'pipe',
       shell: true,
     });
@@ -52,15 +56,21 @@ export async function POST(
     const pidFile = path.join(scriptDir, `${botName}.pid`);
     fs.writeFileSync(pidFile, String(pythonProcess.pid), 'utf-8');
 
-    // Log output for debugging
-    pythonProcess.stdout?.on('data', (data) => {
-      console.log(`[Bot: ${botName}] stdout: ${data.toString()}`);
+    // Helper to prefix logs with timestamp
+    function logWithTimestamp(prefix: string, msg: string) {
+      const now = new Date().toISOString();
+      console.log(`[${now}] [Bot: ${botName}] ${prefix}: ${msg}`);
+    }
+
+    // Log output for debugging, with timestamp
+    pythonProcess.stdout?.on('data', (data: Buffer) => {
+      logWithTimestamp('stdout', data.toString().trim());
     });
-    pythonProcess.stderr?.on('data', (data) => {
-      console.error(`[Bot: ${botName}] stderr: ${data.toString()}`);
+    pythonProcess.stderr?.on('data', (data: Buffer) => {
+      logWithTimestamp('stderr', data.toString().trim());
     });
-    pythonProcess.on('close', (code) => {
-      console.log(`[Bot: ${botName}] process exited with code ${code}`);
+    pythonProcess.on('close', (code: number) => {
+      logWithTimestamp('exit', `process exited with code ${code}`);
       // Clean up the PID file when the process ends
       if (fs.existsSync(pidFile)) fs.unlinkSync(pidFile);
     });
@@ -69,7 +79,7 @@ export async function POST(
       status: 'started',
       bot: botName,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error starting bot "${botName}":`, error);
     return NextResponse.json(
       { error: 'Failed to start bot', details: (error as Error).message },
