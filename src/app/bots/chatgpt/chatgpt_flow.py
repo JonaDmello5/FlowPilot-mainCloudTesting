@@ -16,24 +16,30 @@ def free_port(start=9222):
 
 def launch_chatgpt_browser():
     port = 9222
-    print(f"DEBUG: Using port {port} for Chromium remote debugging")
-    browser_path = "/snap/bin/chromium"
-    print(f"DEBUG: Checking Chromium path at {browser_path}")
+    print(f"DEBUG: Using port {port} for Edge remote debugging")
+    # Try Linux Edge path first
+    browser_path = "/usr/bin/microsoft-edge"
     if not os.path.exists(browser_path):
-        print("DEBUG: Chromium not found!")
-        raise RuntimeError(f"Chromium binary not found at {browser_path}. Please install Chromium via snap.")
+        # Try Windows Edge path as fallback
+        browser_path = r"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+        if not os.path.exists(browser_path):
+            browser_path = r"C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe"
+            if not os.path.exists(browser_path):
+                print("DEBUG: Microsoft Edge not found!")
+                raise RuntimeError("Microsoft Edge binary not found. Please install Edge and check the path.")
+    print(f"DEBUG: Using Edge browser path: {browser_path}")
     co = ChromiumOptions()
     co.set_browser_path(browser_path)
     import tempfile
     temp_dir = tempfile.gettempdir()
-    user_data_dir = os.path.join(temp_dir, f"chromium_profile_{port}")
+    user_data_dir = os.path.join(temp_dir, f"edge_profile_{port}")
     co.set_argument("--no-sandbox")
     co.set_argument("--disable-gpu")
     co.set_argument("--disable-dev-shm-usage")
     co.set_argument(f"--remote-debugging-port={port}")
     co.set_argument(f"--user-data-dir={user_data_dir}")
-    print(f"[DEBUG] Using Chromium browser path: {browser_path}")
+    print(f"[DEBUG] Using Edge browser path: {browser_path}")
     print(f"[DEBUG] Using user data dir: {user_data_dir}")
     driver = ChromiumPage(co)
-    print(f"[SUCCESS] Launched new Chromium browser on port {port}.")
+    print(f"[SUCCESS] Launched new Edge browser on port {port}.")
     return driver 
