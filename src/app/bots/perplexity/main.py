@@ -15,6 +15,7 @@ import atexit
 import psutil
 from pathlib import Path
 import shutil
+import socket
 sys.path.append(str((Path(__file__).resolve().parents[3] / "lib").resolve()))
 from vpn_helper import start_vpn
 start_vpn()
@@ -26,10 +27,22 @@ print("✅ VPN started, proceeding to main bot logic")
 # 3. Set the browser path below:
 
 # Set the browser path for Linux Chromium
+def free_port(start=9222):
+    with socket.socket() as s:
+        s.bind(('', 0))
+        return s.getsockname()[1]
+DEBUG_PORT = free_port()
+print(f"DEBUG: Using debug port {DEBUG_PORT}")
+
+print("DEBUG: After Xvfb")
 CHROMIUM_PATH = "/snap/bin/chromium"
+print("DEBUG: Checking Chromium path")
 if not os.path.exists(CHROMIUM_PATH):
+    print("DEBUG: Chromium not found!")
     raise RuntimeError("Chromium not found at /snap/bin/chromium. Please install Chromium via snap.")
+print("DEBUG: Chromium found, setting env")
 os.environ["DP_BROWSER_PATH"] = CHROMIUM_PATH
+print("DEBUG: Set DP_BROWSER_PATH")
 # --- end Edge setup ---
 
 # Set up UTF-8 encoding for stdout
@@ -453,4 +466,9 @@ def main():
             print("[OK] Browser closed and logs exported.")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        import traceback
+        print("[FATAL ERROR]", e)
+        traceback.print_exc()

@@ -2,6 +2,7 @@ import os
 import subprocess
 import time
 import psutil
+import socket
 
 def start_xvfb():
     if not os.environ.get("DISPLAY"):
@@ -54,10 +55,16 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 driver = None
 
 # Set the browser path for Linux Chromium
+DEBUG_PORT = free_port()
+print(f"DEBUG: Using debug port {DEBUG_PORT}")
 CHROMIUM_PATH = "/snap/bin/chromium"
+print("DEBUG: Checking Chromium path")
 if not os.path.exists(CHROMIUM_PATH):
+    print("DEBUG: Chromium not found!")
     raise RuntimeError("Chromium not found at /snap/bin/chromium. Please install Chromium via snap.")
+print("DEBUG: Chromium found, setting env")
 os.environ["DP_BROWSER_PATH"] = CHROMIUM_PATH
+print("DEBUG: Set DP_BROWSER_PATH")
 
 def _cleanup(signum=None, frame=None):
     global driver
@@ -868,6 +875,11 @@ def append_logs_to_excel(log_csv, excel_file):
     df.to_excel(excel_file, index=False)
     print(f"📝 Logs written to {excel_file}")
 
+def free_port(start=9222):
+    with socket.socket() as s:
+        s.bind(('', 0))
+        return s.getsockname()[1]
+
 def main():
     print("[START] Entered main() function")
     driver = None
@@ -911,7 +923,7 @@ def main():
         # Launch browser
         try:
             print("[STEP] Launching browser...")
-            driver = launch_chatgpt_browser(port=9222)
+            driver = launch_chatgpt_browser(port=DEBUG_PORT)
             print("[OK] Browser launched, proceeding to ChatGPT navigation")
         except Exception as e:
             print(f"[ERROR] Error during browser launch: {e}")
@@ -1073,4 +1085,9 @@ def main():
             print("[OK] Browser closed and VPN disconnected.")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        import traceback
+        print("[FATAL ERROR]", e)
+        traceback.print_exc()
