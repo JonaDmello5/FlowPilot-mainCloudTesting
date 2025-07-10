@@ -80,7 +80,7 @@ export default function BotDashboard() {
       const response = await fetch(`/api/bots/${botType}/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ botType }),
+        // No body needed
       });
   
       let data;
@@ -127,7 +127,7 @@ export default function BotDashboard() {
       const stopResponse = await fetch(`/api/bots/${selectedBot}/stop`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ botType: selectedBot }),
+        // No body needed
       });
   
       if (!stopResponse.ok) {

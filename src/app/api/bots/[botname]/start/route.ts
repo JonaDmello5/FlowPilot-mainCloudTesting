@@ -47,7 +47,7 @@ export async function POST(
 
     // Spawn the bot process
     // Use '-u' for unbuffered output so logs appear immediately in pm2 logs
-    const pythonProcess: ChildProcess = spawn('python', ['-u', scriptPath], {
+    const pythonProcess: ChildProcess = spawn('python3', ['-u', scriptPath], {
       stdio: 'pipe',
       shell: true,
     });
