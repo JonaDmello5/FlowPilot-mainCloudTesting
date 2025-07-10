@@ -25,13 +25,11 @@ print("✅ VPN started, proceeding to main bot logic")
 # 2. Install Edge (default path: C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe)
 # 3. Set the browser path below:
 
-EDGE_PATH = r"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
-if not os.path.exists(EDGE_PATH):
-    EDGE_PATH = r"C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe"  # 64-bit fallback
-if not os.path.exists(EDGE_PATH):
-    raise RuntimeError("Microsoft Edge not found. Please install Edge and check the path.")
-
-os.environ["DP_BROWSER_PATH"] = EDGE_PATH
+# Set the browser path for Linux Chromium
+CHROMIUM_PATH = "/snap/bin/chromium"
+if not os.path.exists(CHROMIUM_PATH):
+    raise RuntimeError("Chromium not found at /snap/bin/chromium. Please install Chromium via snap.")
+os.environ["DP_BROWSER_PATH"] = CHROMIUM_PATH
 # --- end Edge setup ---
 
 # Set up UTF-8 encoding for stdout

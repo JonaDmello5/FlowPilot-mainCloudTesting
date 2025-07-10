@@ -53,9 +53,11 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 # Global driver for cleanup
 driver = None
 
-os.environ["DP_BROWSER_PATH"] = "/usr/bin/microsoft-edge"  # Use Edge browser for Linux
-# For Windows, use:
-# os.environ["DP_BROWSER_PATH"] = r"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+# Set the browser path for Linux Chromium
+CHROMIUM_PATH = "/snap/bin/chromium"
+if not os.path.exists(CHROMIUM_PATH):
+    raise RuntimeError("Chromium not found at /snap/bin/chromium. Please install Chromium via snap.")
+os.environ["DP_BROWSER_PATH"] = CHROMIUM_PATH
 
 def _cleanup(signum=None, frame=None):
     global driver
