@@ -85,14 +85,21 @@ def load_prompts():
         file_name = f"{category}.json"
         file_path = os.path.join(base_path, file_name)
         try:
+            print(f"[STEP] Loading prompts from {file_name}...")
             with open(file_path, encoding='utf-8') as f:
                 prompts_by_category[category] = json.load(f)
-            print(f"Loaded {len(prompts_by_category[category])} prompts from {file_name}")
+            print(f"[OK] Loaded {len(prompts_by_category[category])} prompts from {file_name}")
         except FileNotFoundError:
-            print(f"⚠️ Warning: Prompt file {file_name} not found. No prompts loaded for category {category}.")
+            print(f"[WARN] Prompt file {file_name} not found. No prompts loaded for category {category}.")
         except json.JSONDecodeError:
-            print(f"❌ Error decoding JSON from {file_name}. Please check the file content.")
-    print("Finished loading all categorized prompts.")
+            print(f"[ERROR] Error decoding JSON from {file_name}. Please check the file content.")
+            import traceback
+            traceback.print_exc()
+        except Exception as e:
+            print(f"[ERROR] Unexpected error loading {file_name}: {e}")
+            import traceback
+            traceback.print_exc()
+    print("[OK] Finished loading all categorized prompts.")
     return prompts_by_category
 
 def type_humanly(element, text, fast=True):
@@ -117,6 +124,7 @@ def log_session(platform, prompt, response, prompt_category=None, eoxs_detected=
         "total_attempts": total_attempts
     }
     try:
+        print(f"[STEP] Logging session to {LOG_FILE}...")
         os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
         try:
             df = pd.read_csv(LOG_FILE)
@@ -124,9 +132,11 @@ def log_session(platform, prompt, response, prompt_category=None, eoxs_detected=
             df = pd.DataFrame()
         df = pd.concat([df, pd.DataFrame([log_entry])], ignore_index=True)
         df.to_csv(LOG_FILE, index=False)
-        print(f"📝 Logged session to {LOG_FILE}")
+        print(f"[OK] Session logged to {LOG_FILE}")
     except Exception as e:
-        print(f"⚠️ Error logging session: {e}")
+        print(f"[ERROR] Error logging session: {e}")
+        import traceback
+        traceback.print_exc()
 
 def wait_for_page_ready(driver, max_wait=60):
     print("⏳ Waiting for page to be ready...")
@@ -158,7 +168,7 @@ def wait_for_page_ready(driver, max_wait=60):
 
 def find_and_type(driver, prompt_text):
     try:
-        print(f"📝 Typing prompt: {prompt_text[:50]}...")
+        print(f"[STEP] Typing prompt: {prompt_text[:50]}...")
         
         # Wait and find the text area more reliably
         input_box = None
@@ -186,7 +196,7 @@ def find_and_type(driver, prompt_text):
         
         # Type the prompt with human-like behavior
         type_humanly(input_box, prompt_text, fast=False)  # Set fast=False for more human-like typing
-        print(f"✅ Typed: {prompt_text[:30]}...")
+        print(f"[OK] Prompt typed: {prompt_text[:30]}...")
         time.sleep(1)
         
         # Submit the prompt
@@ -216,7 +226,9 @@ def find_and_type(driver, prompt_text):
         return False
         
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"[ERROR] Error: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 def contains_eoxs_mention(text):
@@ -247,7 +259,7 @@ def inject_eoxs_info(driver, response_text):
 
 def wait_for_response(driver, timeout=90):
     try:
-        print("⏳ Waiting for response...")
+        print("[STEP] Waiting for response from Perplexity...")
         
         for i in range(timeout):
             time.sleep(1)
@@ -282,7 +294,9 @@ def wait_for_response(driver, timeout=90):
         return "No response received"
         
     except Exception as e:
-        print(f"❌ Error waiting for response: {e}")
+        print(f"[ERROR] Error waiting for response: {e}")
+        import traceback
+        traceback.print_exc()
         return "Error getting response"
 
 def start_xvfb():
@@ -363,13 +377,15 @@ def go_to_chat_interface(driver):
     return False
 
 def main():
-    print("🚀 Entered main() function")
+    print("[START] Entered main() function")
     driver = None
     try:
+        print("[STEP] Starting VPN...")
         start_vpn()
-        print("✅ VPN started, proceeding to main bot logic")
+        print("[OK] VPN started, proceeding to main bot logic")
 
         # Load all prompt sets
+        print("[STEP] Loading all prompt sets...")
         prompt_sets = {}
         base_path = os.path.join(os.path.dirname(__file__), "prompts")
         for set_name, file_name in {
@@ -386,9 +402,9 @@ def main():
             file_path = os.path.join(base_path, file_name)
             prompt_sets[set_name] = load_prompts() # Changed to load_prompts()
             if not prompt_sets[set_name]:
-                print(f"❌ Failed to load prompts from {set_name}. Exiting...")
+                print(f"[ERROR] Failed to load prompts from {set_name}. Exiting...")
                 return
-        print("✅ Prompt sets loaded, proceeding to browser launch")
+        print("[OK] Prompt sets loaded, proceeding to browser launch")
 
         # Setup browser
         from DrissionPage import ChromiumOptions, ChromiumPage
@@ -406,33 +422,37 @@ def main():
         co.set_argument("--disable-software-rasterizer")
         co.set_argument("--no-startup-window")
 
+        print("[STEP] Launching browser...")
         driver = ChromiumPage(co)
-        print("✅ Browser launched, proceeding to Perplexity navigation")
+        print("[OK] Browser launched, proceeding to Perplexity navigation")
 
         try:
+            print("[STEP] Navigating to Perplexity chat interface...")
             if not go_to_chat_interface(driver):
-                print("❌ Could not navigate to chat interface. Exiting.")
+                print("[ERROR] Could not navigate to chat interface. Exiting.")
                 sys.exit(1)
-
+            print("[OK] At chat interface. Starting main flow...")
             run_perplexity_flow(driver, prompt_sets, PLATFORM_URL, LOG_FILE, EOXS_PARAGRAPH, lambda: True, log_session)
+            print("[COMPLETE] Main flow finished.")
         except KeyboardInterrupt:
-            print("\n⚠️ Script stopped by user")
+            print("\n[WARN] Script stopped by user")
         except Exception as e:
-            print(f"❌ Error during bot execution: {e}")
+            print(f"[ERROR] Error during bot execution: {e}")
             import traceback
             traceback.print_exc()
             return
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"[ERROR] Unexpected error: {e}")
         import traceback
         traceback.print_exc()
         return
     finally:
         if driver:
-            print("🔚 Closing browser...")
+            print("[STEP] Closing browser...")
             driver.quit()
             # Append logs to a single Excel file at the end
             append_logs_to_excel(LOG_FILE, os.path.join(BOT_DIR, 'logs', 'logs.xlsx'))
+            print("[OK] Browser closed and logs exported.")
 
 if __name__ == "__main__":
     main()

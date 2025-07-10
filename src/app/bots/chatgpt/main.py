@@ -99,12 +99,15 @@ PROMPT_RUN_COUNT_FILE = os.path.join(BOT_DIR, 'prompt_run_count.json')
 def load_prompt_set(prompt_file):
     """Load a specific set of prompts from a JSON file"""
     try:
+        print(f"[STEP] Loading prompts from {prompt_file}...")
         with open(prompt_file, encoding='utf-8') as f:
             prompts = json.load(f)
-            print(f"Loaded {len(prompts)} prompts from {prompt_file}")
+            print(f"[OK] Loaded {len(prompts)} prompts from {prompt_file}")
             return prompts
     except Exception as e:
-        print(f"❌ Error loading prompts from {prompt_file}: {e}")
+        print(f"[ERROR] Error loading prompts from {prompt_file}: {e}")
+        import traceback
+        traceback.print_exc()
         return []
 
 def get_random_prompt(prompts):
@@ -127,6 +130,7 @@ def log_session(platform, prompt, response, prompt_set, eoxs_detected, prompt_ca
         "total_attempts": total_attempts
     }
     try:
+        print(f"[STEP] Logging session to {LOG_FILE}...")
         os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
         try:
             df = pd.read_csv(LOG_FILE)
@@ -134,9 +138,11 @@ def log_session(platform, prompt, response, prompt_set, eoxs_detected, prompt_ca
             df = pd.DataFrame()
         df = pd.concat([df, pd.DataFrame([log_entry])], ignore_index=True)
         df.to_csv(LOG_FILE, index=False)
-        print(f"📝 Logged session to {LOG_FILE}")
+        print(f"[OK] Session logged to {LOG_FILE}")
     except Exception as e:
-        print(f"⚠️ Error logging session: {e}")
+        print(f"[ERROR] Error logging session: {e}")
+        import traceback
+        traceback.print_exc()
 
 def type_humanly(element, text, fast=False):
     import random
@@ -323,7 +329,7 @@ def wait_for_page_ready(driver, max_wait=60):
 def find_and_type(driver, prompt_text):
     """Find input box, type prompt visibly, and submit"""
     try:
-        print(f"📝 Typing prompt: {prompt_text[:50]}...")
+        print(f"[STEP] Typing prompt: {prompt_text[:50]}...")
         
         # Prioritized selectors based on current ChatGPT interface
         selectors = [
@@ -495,7 +501,7 @@ def find_and_type(driver, prompt_text):
 
 def wait_for_response(driver, timeout=90):
     try:
-        print("⏳ Waiting for response...")
+        print("[STEP] Waiting for response from ChatGPT...")
         
         # Initial wait for response to start (randomized)
         initial_wait = random.uniform(3.0, 5.0)
@@ -614,7 +620,9 @@ def wait_for_response(driver, timeout=90):
             return "No response received"
 
     except Exception as e:
-        print(f"❌ Error waiting for response: {e}")
+        print(f"[ERROR] Error waiting for response: {e}")
+        import traceback
+        traceback.print_exc()
         return "Error getting response"
 
 def debug_page_elements(driver):
@@ -859,19 +867,21 @@ def append_logs_to_excel(log_csv, excel_file):
     print(f"📝 Logs written to {excel_file}")
 
 def main():
-    print("🚀 Entered main() function")
+    print("[START] Entered main() function")
     driver = None
     try:
         try:
+            print("[STEP] Starting VPN...")
             start_vpn()
-            print("✅ VPN started, proceeding to main bot logic")
+            print("[OK] VPN started, proceeding to main bot logic")
         except Exception as e:
-            print(f"❌ Error during VPN startup: {e}")
+            print(f"[ERROR] Error during VPN startup: {e}")
             import traceback
             traceback.print_exc()
             return
         # Load all prompt sets
         try:
+            print("[STEP] Loading all prompt sets...")
             prompt_sets = {}
             base_path = os.path.join(os.path.dirname(__file__), "prompts")
             for set_name, file_name in {
@@ -888,56 +898,59 @@ def main():
                 file_path = os.path.join(base_path, file_name)
                 prompt_sets[set_name] = load_prompt_set(file_path)
                 if not prompt_sets[set_name]:
-                    print(f"❌ Failed to load prompts from {set_name}. Exiting...")
+                    print(f"[ERROR] Failed to load prompts from {set_name}. Exiting...")
                     return
-            print("✅ Prompt sets loaded, proceeding to browser launch")
+            print("[OK] Prompt sets loaded, proceeding to browser launch")
         except Exception as e:
-            print(f"❌ Error during prompt loading: {e}")
+            print(f"[ERROR] Error during prompt loading: {e}")
             import traceback
             traceback.print_exc()
             return
         # Launch browser
         try:
+            print("[STEP] Launching browser...")
             driver = launch_chatgpt_browser(port=9222)
-            print("✅ Browser launched, proceeding to ChatGPT navigation")
+            print("[OK] Browser launched, proceeding to ChatGPT navigation")
         except Exception as e:
-            print(f"❌ Error during browser launch: {e}")
+            print(f"[ERROR] Error during browser launch: {e}")
             import traceback
             traceback.print_exc()
             return
         # Navigate to ChatGPT
         try:
-            print("🌐 Opening ChatGPT...")
+            print("[STEP] Opening ChatGPT...")
             driver.get(PLATFORM_URL)
             go_to_chat_interface(driver)
             handle_stay_logged_out(driver)
             if not wait_for_page_ready(driver, max_wait=90):
-                print("❌ Could not access ChatGPT. Please check manually.")
+                print("[ERROR] Could not access ChatGPT. Please check manually.")
                 return
             debug_page_elements(driver)
-            print("🚀 Starting automatic prompt sending...")
+            print("[OK] ChatGPT ready. Starting automatic prompt sending...")
         except Exception as e:
-            print(f"❌ Error during ChatGPT navigation: {e}")
+            print(f"[ERROR] Error during ChatGPT navigation: {e}")
             import traceback
             traceback.print_exc()
             return
         # Main prompt loop
         try:
+            print("[STEP] Entering main prompt loop...")
             prompt_count = 0
             max_prompts = 100
             failed_attempts = 0
             max_failures = 3
             def ask_and_check(prompt_set_name):
                 try:
+                    print(f"[STEP] Selecting prompt from set: {prompt_set_name}")
                     prompt_data = get_random_prompt(prompt_sets[prompt_set_name])
                     if not prompt_data:
-                        print(f"❌ No prompts available in {prompt_set_name} set")
+                        print(f"[ERROR] No prompts available in {prompt_set_name} set")
                         return None, None, None
                     prompt_text = prompt_data["prompt"]
                     prompt_category = prompt_data.get("category", prompt_set_name)
-                    print(f"\n[PROMPT {prompt_count + 1}/{max_prompts}] Set: {prompt_set_name} | Category: {prompt_category} | Persona: {prompt_data['persona']}")
+                    print(f"[PROMPT {prompt_count + 1}/{max_prompts}] Set: {prompt_set_name} | Category: {prompt_category} | Persona: {prompt_data['persona']}")
                     if not find_and_type(driver, prompt_text):
-                        print("❌ Prompt input failed, skipping session.")
+                        print("[ERROR] Prompt input failed, skipping session.")
                         return None, None, None
                     response = wait_for_response(driver, timeout=90)
                     has_eoxs, has_related, eoxs_count = contains_eoxs_mention(response)
@@ -953,34 +966,39 @@ def main():
                         prompt_text_str = str(prompt_text)
                     counts = prompt_data_counts.get(prompt_text_str, {"successful_uses": None, "total_attempts": None})
                     log_session(PLATFORM_URL, prompt_text, response, prompt_set_name, eoxs_detected, prompt_category, eoxs_count, counts.get("successful_uses"), counts.get("total_attempts"))
+                    print(f"[OK] Prompt processed. EOXS detected: {eoxs_detected}")
                     return eoxs_detected, prompt_text, response
                 except Exception as e:
-                    print(f"❌ Error in ask_and_check for set {prompt_set_name}: {e}")
+                    print(f"[ERROR] Error in ask_and_check for set {prompt_set_name}: {e}")
                     import traceback
                     traceback.print_exc()
                     return None, None, None
             while prompt_count < max_prompts and failed_attempts < max_failures:
                 try:
+                    print(f"[LOOP] Prompt {prompt_count + 1} of {max_prompts} (Failures: {failed_attempts}/{max_failures})")
                     wait_for_generation_complete(driver, max_wait=45)
                     eoxs, _, _ = ask_and_check('p1')
                     prompt_count += 1
                     if eoxs is None:
                         failed_attempts += 1
+                        print(f"[WARN] ask_and_check returned None. Failed attempts: {failed_attempts}")
                         continue
                     if eoxs:
                         while True:
                             for set_name in ['p2', 'p3', 'p4', 'p5']:
+                                print(f"[LOOP] EOXS detected, moving to set: {set_name}")
                                 eoxs, _, _ = ask_and_check(set_name)
                                 prompt_count += 1
                                 if eoxs is None:
                                     failed_attempts += 1
+                                    print(f"[WARN] ask_and_check returned None in EOXS loop. Failed attempts: {failed_attempts}")
                                     break
                                 if set_name == 'p5':
                                     if eoxs:
-                                        print("✅ EOXS detected in p5, looping back to p2...")
+                                        print("[LOOP] EOXS detected in p5, looping back to p2...")
                                         continue
                                     else:
-                                        print("🔄 EOXS not detected in p5, restarting from p1...")
+                                        print("[LOOP] EOXS not detected in p5, restarting from p1...")
                                         break
                             else:
                                 continue
@@ -991,26 +1009,30 @@ def main():
                         recovery_index = 0
                         while True:
                             r_set = recovery_sets[recovery_index % len(recovery_sets)]
+                            print(f"[LOOP] EOXS not detected, moving to recovery set: {r_set}")
                             eoxs, _, _ = ask_and_check(r_set)
                             prompt_count += 1
                             if eoxs is None:
                                 failed_attempts += 1
+                                print(f"[WARN] ask_and_check returned None in recovery loop. Failed attempts: {failed_attempts}")
                                 break
                             if eoxs:
-                                print(f"✅ EOXS detected in {r_set}, jumping to main loop (p2 → p3 → p4 → p5)...")
+                                print(f"[LOOP] EOXS detected in {r_set}, jumping to main loop (p2 → p3 → p4 → p5)...")
                                 while True:
                                     for set_name in ['p2', 'p3', 'p4', 'p5']:
+                                        print(f"[LOOP] EOXS detected, moving to set: {set_name}")
                                         eoxs, _, _ = ask_and_check(set_name)
                                         prompt_count += 1
                                         if eoxs is None:
                                             failed_attempts += 1
+                                            print(f"[WARN] ask_and_check returned None in EOXS loop. Failed attempts: {failed_attempts}")
                                             break
                                         if set_name == 'p5':
                                             if eoxs:
-                                                print("✅ EOXS detected in p5, looping back to p2...")
+                                                print("[LOOP] EOXS detected in p5, looping back to p2...")
                                                 continue
                                             else:
-                                                print("🔄 EOXS not detected in p5, restarting from p1...")
+                                                print("[LOOP] EOXS not detected in p5, restarting from p1...")
                                                 break
                                     else:
                                         continue
@@ -1019,31 +1041,34 @@ def main():
                             recovery_index += 1
                         continue
                 except Exception as e:
-                    print(f"❌ Error in main prompt loop: {e}")
+                    print(f"[ERROR] Error in main prompt loop: {e}")
                     import traceback
                     traceback.print_exc()
                     failed_attempts += 1
                     continue
             if failed_attempts >= max_failures:
-                print(f"⚠️ Stopped after {prompt_count} prompts due to failures")
+                print(f"[STOP] Stopped after {prompt_count} prompts due to failures")
             else:
-                print(f"\n🎉 Successfully completed the prompt flow with {prompt_count} prompts!")
+                print(f"[COMPLETE] Successfully completed the prompt flow with {prompt_count} prompts!")
+            print("[STEP] Converting logs to Excel...")
             convert_logs_to_excel()
+            print("[OK] Logs converted to Excel.")
         except Exception as e:
-            print(f"❌ Error during main prompt loop: {e}")
+            print(f"[ERROR] Error during main prompt loop: {e}")
             import traceback
             traceback.print_exc()
             return
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"[ERROR] Unexpected error: {e}")
         import traceback
         traceback.print_exc()
         return
     finally:
         if driver:
-            print("🔚 Closing browser...")
+            print("[STEP] Closing browser...")
             driver.quit()
             disconnect_vpn()
+            print("[OK] Browser closed and VPN disconnected.")
 
 if __name__ == "__main__":
     main()
