@@ -1,50 +1,27 @@
-import os
-import subprocess
-import time
-import psutil
 import socket
-
-def start_xvfb():
-    if not os.environ.get("DISPLAY"):
-        xvfb_running = any("Xvfb" in (p.name() or "") for p in psutil.process_iter())
-        if not xvfb_running:
-            print("🔵 Starting Xvfb virtual display...")
-            xvfb_cmd = ["Xvfb", ":99", "-screen", "0", "1280x1024x24"]
-            proc = subprocess.Popen(xvfb_cmd)
-            time.sleep(2)
-        else:
-            print("🟢 Xvfb is already running.")
-        os.environ["DISPLAY"] = ":99"
-    else:
-        print(f"🟢 DISPLAY already set to {os.environ['DISPLAY']}")
-
-start_xvfb()
-from pathlib import Path
-import sys
-sys.path.append(str((Path(__file__).resolve().parents[3] / "lib").resolve()))
-# from vpn_helper import start_vpn
-# start_vpn()
-# print("✅ VPN started, proceeding to main bot logic")
 import random
-import time
 import json
 import pandas as pd
 import requests
 import subprocess
 import sys
 import os
+import io
+import time
+import psutil
 from datetime import datetime
 from bs4 import BeautifulSoup
 from DrissionPage import ChromiumOptions, ChromiumPage
 import openpyxl
 from openpyxl.styles import PatternFill
 from time import sleep
-import io
 import signal
 import atexit
-import psutil
 import shutil
 import re
+from pathlib import Path
+import sys
+sys.path.append(str((Path(__file__).resolve().parents[3] / "lib").resolve()))
 from chatgpt_flow import launch_chatgpt_browser
 
 # Set up UTF-8 encoding for stdout
@@ -53,41 +30,6 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 # Global driver for cleanup
 driver = None
-
-# Set the browser path for Linux Chromium
-DEBUG_PORT = free_port()
-print(f"DEBUG: Using debug port {DEBUG_PORT}")
-CHROMIUM_PATH = "/snap/bin/chromium"
-print("DEBUG: Checking Chromium path")
-if not os.path.exists(CHROMIUM_PATH):
-    print("DEBUG: Chromium not found!")
-    raise RuntimeError("Chromium not found at /snap/bin/chromium. Please install Chromium via snap.")
-print("DEBUG: Chromium found, setting env")
-os.environ["DP_BROWSER_PATH"] = CHROMIUM_PATH
-print("DEBUG: Set DP_BROWSER_PATH")
-
-def _cleanup(signum=None, frame=None):
-    global driver
-    if driver:
-        try:
-            print("🔚 Received shutdown signal, closing browser…")
-            driver.quit()
-        except Exception:
-            pass
-    # sys.exit(0)  # Removed to avoid warning in atexit handler
-
-# Register cleanup handlers
-signal.signal(signal.SIGTERM, _cleanup)
-signal.signal(signal.SIGINT, _cleanup)
-atexit.register(_cleanup)
-
-def disconnect_vpn():
-    """Gracefully stop OpenVPN if running; ignore errors."""
-    try:
-        subprocess.run(["sudo", "pkill", "-f", "openvpn"], check=False)
-        print("🔻 VPN tunnel closed.")
-    except Exception as e:
-        print("Could not close VPN:", e)
 
 # === CONFIGURATION ===
 PLATFORM_URL = "https://chatgpt.com/"  # Direct to chat interface
@@ -879,6 +821,25 @@ def free_port(start=9222):
     with socket.socket() as s:
         s.bind(('', 0))
         return s.getsockname()[1]
+
+DEBUG_PORT = free_port()
+print(f"DEBUG: Using debug port {DEBUG_PORT}")
+CHROMIUM_PATH = "/snap/bin/chromium"
+print("DEBUG: Checking Chromium path")
+if not os.path.exists(CHROMIUM_PATH):
+    print("DEBUG: Chromium not found!")
+    raise RuntimeError("Chromium not found at /snap/bin/chromium. Please install Chromium via snap.")
+print("DEBUG: Chromium found, setting env")
+os.environ["DP_BROWSER_PATH"] = CHROMIUM_PATH
+print("DEBUG: Set DP_BROWSER_PATH")
+
+def disconnect_vpn():
+    """Gracefully stop OpenVPN if running; ignore errors."""
+    try:
+        subprocess.run(["sudo", "pkill", "-f", "openvpn"], check=False)
+        print("🔻 VPN tunnel closed.")
+    except Exception as e:
+        print("Could not close VPN:", e)
 
 def main():
     print("[START] Entered main() function")
