@@ -17,16 +17,10 @@ def free_port(start=9222):
 def launch_chatgpt_browser():
     port = 9222
     print(f"DEBUG: Using port {port} for Edge remote debugging")
-    # Try Linux Edge path first
     browser_path = "/usr/bin/microsoft-edge"
     if not os.path.exists(browser_path):
-        # Try Windows Edge path as fallback
-        browser_path = r"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
-        if not os.path.exists(browser_path):
-            browser_path = r"C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe"
-            if not os.path.exists(browser_path):
-                print("DEBUG: Microsoft Edge not found!")
-                raise RuntimeError("Microsoft Edge binary not found. Please install Edge and check the path.")
+        print("DEBUG: Microsoft Edge not found at /usr/bin/microsoft-edge!")
+        raise RuntimeError("Microsoft Edge binary not found at /usr/bin/microsoft-edge. Please install Edge for Linux via the official Microsoft repository.")
     print(f"DEBUG: Using Edge browser path: {browser_path}")
     co = ChromiumOptions()
     co.set_browser_path(browser_path)
