@@ -4,6 +4,8 @@ import socket
 import os
 import platform
 import tempfile
+import subprocess
+import time
 
 def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -14,7 +16,22 @@ def free_port(start=9222):
         s.bind(('', 0))
         return s.getsockname()[1]
 
+def start_xvfb():
+    if not os.environ.get("DISPLAY"):
+        # Check if Xvfb is already running
+        try:
+            output = subprocess.check_output(["pgrep", "Xvfb"])
+            print(":large_green_circle: Xvfb is already running.")
+        except subprocess.CalledProcessError:
+            print(":large_blue_circle: Starting Xvfb virtual display...")
+            subprocess.Popen(["Xvfb", ":99", "-screen", "0", "1280x1024x24"])
+            time.sleep(2)
+        os.environ["DISPLAY"] = ":99"
+    else:
+        print(f":large_green_circle: DISPLAY already set to {os.environ['DISPLAY']}.")
+
 def launch_chatgpt_browser():
+    start_xvfb()
     port = 9222
     print(f"DEBUG: Using port {port} for Edge remote debugging")
     browser_path = "/usr/bin/microsoft-edge"
@@ -30,6 +47,8 @@ def launch_chatgpt_browser():
     co.set_argument("--no-sandbox")
     co.set_argument("--disable-gpu")
     co.set_argument("--disable-dev-shm-usage")
+    # Remove headless mode, only use Xvfb
+    # co.set_argument("--headless=new")  # Removed
     co.set_argument(f"--remote-debugging-port={port}")
     co.set_argument(f"--user-data-dir={user_data_dir}")
     print(f"[DEBUG] Using Edge browser path: {browser_path}")
