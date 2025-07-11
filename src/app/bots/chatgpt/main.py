@@ -783,7 +783,13 @@ def go_to_chat_interface(driver):
     except Exception as nav_err:
         print(f"❌ Error navigating to https://chatgpt.com/: {nav_err}")
         return False
-    handle_stay_logged_out(driver)  # Try to click the popup if it appears
+    # Only check for the popup ONCE
+    handle_stay_logged_out(driver)
+    # Immediately check URL after popup handling
+    current_url = driver.url
+    if not ("chatgpt.com" in current_url):
+        print(f"❌ Unexpected redirect! Current URL: {current_url}. Stopping bot.")
+        return False
     selectors = [
         "#prompt-textarea",
         ".ProseMirror",
@@ -903,7 +909,6 @@ def main():
             print("[STEP] Opening ChatGPT...")
             driver.get(PLATFORM_URL)
             go_to_chat_interface(driver)
-            handle_stay_logged_out(driver)
             if not wait_for_page_ready(driver, max_wait=90):
                 print("[ERROR] Could not access ChatGPT. Please check manually.")
                 return
