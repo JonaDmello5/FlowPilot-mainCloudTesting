@@ -51,8 +51,15 @@ def launch_chatgpt_browser():
     # co.set_argument("--headless=new")  # Removed
     co.set_argument(f"--remote-debugging-port={port}")
     co.set_argument(f"--user-data-dir={user_data_dir}")
+    co.set_argument("--incognito")  # Always use incognito mode
     print(f"[DEBUG] Using Edge browser path: {browser_path}")
     print(f"[DEBUG] Using user data dir: {user_data_dir}")
     driver = ChromiumPage(co)
+    # Clear all cookies before navigating to ChatGPT
+    try:
+        driver.cookies.clear()  # type: ignore[attr-defined]
+        print("[DEBUG] Cleared all cookies before navigation.")
+    except Exception as e:
+        print(f"[WARN] Could not clear cookies: {e}")
     print(f"[SUCCESS] Launched new Edge browser on port {port}.")
     return driver 
