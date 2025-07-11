@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import csvtojson from 'csvtojson';
+import { promises as fsp } from 'fs';
 
 // Helper function to get the log file path
 function getLogFilePath(botName: string): string {
@@ -104,4 +105,46 @@ export async function POST(
     .filter(Boolean);
 
   return NextResponse.json({ logs: filteredLogs }, { status: 200 });
+}
+
+// --- Excel log download endpoint ---
+export async function GET_EXCEL(
+  req: NextRequest,
+  context: { params: Promise<{ botName: string }> }
+) {
+  const params = await context.params;
+  const { botName } = params;
+
+  if (botName !== 'chatgpt') {
+    return NextResponse.json({ error: 'Excel download only supported for chatgpt' }, { status: 400 });
+  }
+
+  const logsDir = path.join(process.cwd(), 'bots', botName, 'logs');
+  let files: string[];
+  try {
+    files = await fsp.readdir(logsDir);
+  } catch (e) {
+    return NextResponse.json({ error: 'Logs directory not found' }, { status: 404 });
+  }
+  const excelFiles = files.filter(f => /^logs_\d{8}_\d{6}\.xlsx$/.test(f));
+  if (excelFiles.length === 0) {
+    return NextResponse.json({ error: 'No Excel log files found' }, { status: 404 });
+  }
+  // Sort by timestamp descending
+  excelFiles.sort().reverse();
+  const latestFile = excelFiles[0];
+  const filePath = path.join(logsDir, latestFile);
+  let buffer: Buffer;
+  try {
+    buffer = await fsp.readFile(filePath);
+  } catch (e) {
+    return NextResponse.json({ error: 'Could not read Excel file' }, { status: 500 });
+  }
+  return new NextResponse(buffer, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="${latestFile}"`,
+    },
+  });
 }
