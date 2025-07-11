@@ -47,6 +47,9 @@ def launch_chatgpt_browser():
     co.set_argument("--no-sandbox")
     co.set_argument("--disable-gpu")
     co.set_argument("--disable-dev-shm-usage")
+    co.set_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+    co.set_argument("--disable-blink-features=AutomationControlled")
+    co.set_argument("--disable-infobars")
     # Remove headless mode, only use Xvfb
     # co.set_argument("--headless=new")  # Removed
     co.set_argument(f"--remote-debugging-port={port}")
