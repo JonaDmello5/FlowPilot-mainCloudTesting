@@ -784,22 +784,29 @@ def go_to_chat_interface(driver):
         print(f"❌ Error navigating to https://chatgpt.com/: {nav_err}")
         return False
     handle_stay_logged_out(driver)  # Try to click the popup if it appears
+    selectors = [
+        "#prompt-textarea",
+        ".ProseMirror",
+        "[contenteditable='true']",
+        "tag:textarea",
+        "[data-testid*='input']",
+        "[placeholder*='Send a message']",
+        "[placeholder*='Message ChatGPT']",
+        "[placeholder*='Message']"
+    ]
     for i in range(30):
-        try:
-            input_box = driver.ele("tag:textarea")
-            if input_box:
-                print(f"✅ Chat input found at attempt {i+1}!")
-                return True
-            else:
-                print(f"⏳ Attempt {i+1}: Chat input not found yet.")
-        except Exception as input_err:
-            print(f"⚠️ Error finding chat input at attempt {i+1}: {input_err}")
+        input_box = None
+        for selector in selectors:
+            try:
+                input_box = driver.ele(selector)
+                if input_box:
+                    print(f"✅ Chat input found at attempt {i+1} with selector: {selector}!")
+                    return True
+            except Exception as input_err:
+                continue
+        print(f"⏳ Attempt {i+1}: Chat input not found yet.")
         time.sleep(1)
-    try:
-        driver.screenshot('debug_no_input.png')
-        print("❌ Chat input not found after 30 attempts. Screenshot saved as debug_no_input.png")
-    except Exception as e:
-        print(f"⚠️ Could not save screenshot: {e}")
+    print("❌ Chat input not found after 30 attempts. Please check the page structure or selectors.")
     return False
 
 # --- Update append_logs_to_excel to always include all columns ---
