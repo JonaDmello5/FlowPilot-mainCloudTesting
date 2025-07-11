@@ -749,9 +749,9 @@ def convert_logs_to_excel():
         print("6. avg_eoxs_per_response - Average EOXS mentions per successful response")
         
         # Clear the CSV file after creating Excel
-        df = pd.DataFrame()
-        df.to_csv(LOG_FILE, index=False)
-        print("📝 Cleared logs.csv for next session")
+        # df = pd.DataFrame()
+        # df.to_csv(LOG_FILE, index=False)
+        # print("📝 Cleared logs.csv for next session")
         
     except Exception as e:
         print(f"⚠️ Error creating Excel log file: {e}")
