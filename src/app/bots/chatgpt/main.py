@@ -756,24 +756,30 @@ def convert_logs_to_excel():
     except Exception as e:
         print(f"⚠️ Error creating Excel log file: {e}")
 
-def handle_stay_logged_out(driver, timeout=8):
-    """Click 'Stay logged out' if the popup appears within timeout seconds."""
-    print("🔍 Checking for 'Stay logged out' popup...")
-    for i in range(timeout * 2):  # check every 0.5s
-        try:
-            btn = driver.ele('text:Stay logged out')
-            if btn:
-                try:
-                    btn.click()
-                    print(f'✅ Clicked "Stay logged out" to dismiss login popup at attempt {i+1}.')
-                    return True
-                except Exception as click_err:
-                    print(f'⚠️ Error clicking "Stay logged out" at attempt {i+1}: {click_err}')
-        except Exception as find_err:
-            print(f'⚠️ Error finding "Stay logged out" at attempt {i+1}: {find_err}')
-        time.sleep(0.5)
-    print('ℹ️ "Stay logged out" not found after waiting, proceeding as normal.')
-    return False
+def handle_stay_logged_out(driver, verbose=True):
+    """Click 'Stay logged out' if the popup appears (try only once per call)."""
+    if verbose:
+        print("🔍 Checking for 'Stay logged out' popup...")
+    try:
+        btn = driver.ele('text:Stay logged out')
+        if btn:
+            try:
+                btn.click()
+                print('✅ Clicked "Stay logged out" to dismiss login popup.')
+                return True
+            except Exception as click_err:
+                print(f'⚠️ Error clicking "Stay logged out": {click_err}')
+                print('ℹ️ Popup may have disappeared, proceeding as normal.')
+                return False
+        else:
+            if verbose:
+                print('ℹ️ "Stay logged out" not found, proceeding as normal.')
+            return False
+    except Exception as find_err:
+        if verbose:
+            print(f'⚠️ Error finding "Stay logged out": {find_err}')
+            print('ℹ️ Proceeding as normal.')
+        return False
 
 def go_to_chat_interface(driver):
     print("[NAV] Navigating to https://chatgpt.com/ and looking for chat input...")
@@ -926,6 +932,8 @@ def main():
             max_prompts = 100
             failed_attempts = 0
             max_failures = 3
+            # Add a flag to only print the popup check message the first time
+            popup_check_verbose = True
             def ask_and_check(prompt_set_name):
                 try:
                     print(f"[STEP] Selecting prompt from set: {prompt_set_name}")
@@ -964,6 +972,8 @@ def main():
                 try:
                     print(f"[LOOP] Prompt {prompt_count + 1} of {max_prompts} (Failures: {failed_attempts}/{max_failures})")
                     wait_for_generation_complete(driver, max_wait=45)
+                    handle_stay_logged_out(driver, verbose=popup_check_verbose)
+                    popup_check_verbose = False
                     eoxs, _, _ = ask_and_check('p1')
                     prompt_count += 1
                     if eoxs is None:
